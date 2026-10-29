@@ -1,0 +1,589 @@
+// ==========================================
+// BACKGROUND SCRIPT / SERVICE WORKER
+// ==========================================
+
+// ------------------------------------------
+// Global Script Injection for Multi-Line Paste Support
+// ------------------------------------------
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Only inject script into normal, complete webpages
+  if (changeInfo.status === 'complete' && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('edge://')) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: setupGlobalSequentialPaste
+    }).catch(err => console.log("Script injection skipped/failed for tab:", tabId, err));
+  }
+  // Only inject script when the page is complete and the URL matches Wafid's book-appointment page
+  if (
+    changeInfo.status === 'complete' && 
+    tab.url && 
+    tab.url.includes('wafid.com/en/book-appointment')
+  ) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: wafid
+    }).catch(err => console.log("Script injection skipped/failed for tab:", tabId, err));
+  } else if (
+    changeInfo.status === 'complete' && 
+    tab.url && 
+    tab.url.startsWith('https://wafid.com/en/appointment/') && tab.url.endsWith('/pay/')
+  ) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: linktoclipboard
+    }).catch(err => console.log("Script injection skipped/failed for tab:", tabId, err));
+  }
+});
+
+function linktoclipboard(){
+  // 1. Create and style the button
+  const button = document.createElement("button");
+  
+  // Added an icon emoji and clean text
+  button.innerHTML = "Share to WhatsApp";
+  button.id = "whatsappclick";
+  
+  // Beautiful modern styling
+  button.style.background = "#25D366"; // Official WhatsApp Green
+  button.style.color = "#ffffff";
+  button.style.border = "none";
+  button.style.padding = "10px 18px";
+  button.style.fontSize = "14px";
+  button.style.fontWeight = "600";
+  button.style.borderRadius = "8px";
+  button.style.cursor = "pointer";
+  button.style.display = "inline-flex";
+  button.style.alignItems = "center";
+  button.style.gap = "8px";
+  button.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
+  button.style.transition = "all 0.2s ease-in-out";
+
+  // Hover and active effects for interactivity
+  button.onmouseover = () => {
+    button.style.background = "#20ba5a";
+    button.style.boxShadow = "0 6px 8px rgba(0, 0, 0, 0.15)";
+    button.style.transform = "translateY(-1px)";
+  };
+  
+  button.onmouseout = () => {
+    button.style.background = "#25D366";
+    button.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
+    button.style.transform = "translateY(0)";
+  };
+
+  document.querySelector(".list").append(button);
+
+  // 2. Add the click event listener
+  button.addEventListener("click", async () => {
+    // Get the payment value from the specified element
+    const paymentValue = document.querySelectorAll(".list .payment-value")[2]?.innerText || "";
+    
+    // Construct the message text
+    const textToCopy = `${window.location.href}\n${paymentValue}\nMULTAN KSA`;
+
+    try {
+        // Copy the formatted text to the clipboard
+        await navigator.clipboard.writeText(textToCopy);
+        alert("Copied to clipboard!");
+        
+        // Optional: Open WhatsApp with the pre-filled text
+        // const encodedText = encodeURIComponent(textToCopy);
+        // window.open(`https://api.whatsapp.com/send?text=${encodedText}`, "_blank");
+        // Redirect to the Wafid appointment page
+        setTimeout(() => {
+        window.location.href = "https://wafid.com/en/book-appointment/";
+    }, 3000);
+        
+    } catch (err) {
+        console.error("Failed to copy: ", err);
+    }    
+  });
+}
+
+function wafid(){
+  document.querySelector("#id_country").value = "PAK";
+
+// Dispatch standard 'change' and 'input' events
+document.querySelector("#id_country").dispatchEvent(new Event("change", { bubbles: true }));
+document.querySelector("#id_country").dispatchEvent(new Event("input", { bubbles: true }));
+
+document.querySelector("#id_city").value = "76";
+document.querySelector("#id_city").dispatchEvent(new Event("change", { bubbles: true }));
+document.querySelector("#id_city").dispatchEvent(new Event("input", { bubbles: true }));
+
+document.querySelector("#id_traveled_country").value = "SA";
+document.querySelector("#id_traveled_country").dispatchEvent(new Event("change", { bubbles: true }));
+document.querySelector("#id_traveled_country").dispatchEvent(new Event("input", { bubbles: true }));
+
+document.querySelector("#id_appointment_type_0").checked = true;
+document.querySelector("#id_appointment_type_0").dispatchEvent(new Event("change", { bubbles: true }));
+document.querySelector("#id_appointment_type_0").dispatchEvent(new Event("input", { bubbles: true }));
+
+document.querySelector("#id_confirm").checked = true;
+document.querySelector("#id_confirm").dispatchEvent(new Event("change", { bubbles: true }));
+document.querySelector("#id_confirm").dispatchEvent(new Event("input", { bubbles: true }));
+
+const firstNameInput = document.querySelector("#id_first_name");
+
+if (firstNameInput) {
+    firstNameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    firstNameInput.focus();
+    
+    // Simulate the full mouse click sequence
+    firstNameInput.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+    firstNameInput.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
+    firstNameInput.click();
+}
+}
+
+/**
+ * Injected into every tab page to handle multi-line sequential pasting
+ */
+function setupGlobalSequentialPaste() {
+  if (window.hasAtauxelSequentialPaste) return;
+  window.hasAtauxelSequentialPaste = true;
+
+  // Helper to verify an element and all its ancestors are visible and interactive
+  function isElementVisible(el) {
+    let current = el;
+    while (current && current !== document.body) {
+      if (current.hidden || current.getAttribute('aria-hidden') === 'true') {
+        return false;
+      }
+      const style = window.getComputedStyle(current);
+      if (
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        style.opacity === '0'
+      ) {
+        return false;
+      }
+      current = current.parentElement;
+    }
+    return true;
+  }
+
+  document.addEventListener('paste', function (e) {
+    const activeEl = document.activeElement;
+
+    // Ensure focus is inside a fillable element
+    const isInput =
+      activeEl.tagName === 'INPUT' ||
+      activeEl.tagName === 'TEXTAREA' ||
+      activeEl.tagName === 'SELECT' ||
+      activeEl.isContentEditable;
+    if (!isInput) return;
+
+    // Get pasted clipboard text
+    const pasteData = (e.clipboardData || window.clipboardData).getData('text');
+    const lines = pasteData
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    // If single line, allow standard paste behavior
+    if (lines.length <= 1) return;
+
+    // Prevent default multi-line block dump into 1 element
+    e.preventDefault();
+
+    // Selectable selector including SELECT and excluding non-text INPUT types
+    const selector = [
+      'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]):not([type="radio"])',
+      'textarea',
+      'select',
+      '[contenteditable="true"]'
+    ].join(',');
+
+    // Collect all strictly visible form fields on the page
+    const fields = Array.from(document.querySelectorAll(selector)).filter(el => {
+      return !el.disabled && !el.readOnly && isElementVisible(el);
+    });
+
+    const startIndex = fields.indexOf(activeEl);
+    if (startIndex === -1) return;
+
+    // Sequentially populate inputs line-by-line
+    lines.forEach((lineText, offset) => {
+      const targetField = fields[startIndex + offset];
+      if (!targetField) return;
+
+      if (targetField.tagName === 'SELECT') {
+        const lowerLine = lineText.toLowerCase();
+        let matchedOption = Array.from(targetField.options).find(
+          opt => opt.value.toLowerCase() === lowerLine || opt.text.trim().toLowerCase() === lowerLine
+        );
+
+        if (!matchedOption) {
+          matchedOption = Array.from(targetField.options).find(
+            opt => opt.text.trim().toLowerCase().startsWith(lowerLine)
+          );
+        }
+
+        if (matchedOption) {
+          targetField.value = matchedOption.value;
+        }
+      } else if (targetField.tagName === 'INPUT' && targetField.type === 'checkbox') {
+        const truthyValues = ['true', '1', 'yes', 'on', 'checked', 'x'];
+        const isChecked = truthyValues.includes(lineText.toLowerCase());
+
+        const tracker = targetField._valueTracker;
+        targetField.checked = isChecked;
+        if (tracker) tracker.setValue(!isChecked);
+      } else if (targetField.isContentEditable) {
+        targetField.innerText = lineText;
+      } else {
+        const tracker = targetField._valueTracker;
+        targetField.value = lineText;
+        if (tracker) tracker.setValue('');
+      }
+
+      // Dispatch change and input events
+      targetField.dispatchEvent(new Event('input', { bubbles: true }));
+      targetField.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+  });
+}
+
+// ------------------------------------------
+// Existing Chrome Runtime Message Listeners
+// ------------------------------------------
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  const originTabId = sender.tab ? sender.tab.id : null;
+
+  // 1. Handle DLIMS Request
+  if (request.action === "open_dlims_background") {
+    chrome.tabs.create({
+      url: "https://dlims.punjab.gov.pk/elicense",
+      active: false 
+    }, (tab) => {
+      chrome.storage.local.set({
+        pendingCnic: request.cnic,
+        pendingDob: request.dob,
+        targetTabId: tab.id,
+        originTabId: originTabId,
+        isSubmitted: false
+      });
+    });
+  }
+  
+  // 2. Handle IRIS Request
+  if (request.action === "open_iris_background") {
+    chrome.tabs.create({
+      url: "https://iris.fbr.gov.pk/",
+      active: false 
+    }, (tab) => {
+      chrome.storage.local.set({
+        pendingCnic: request.cnic,
+        targetTabId: tab.id,
+        originTabId: originTabId,
+        isSubmitted: false
+      });
+    });
+  }
+
+  // 3. Handle DLIMS Data Response & Cleanup
+  if (request.action === "dlims_data_fetched") {
+    chrome.storage.local.get(["originTabId", "targetTabId"], (data) => {
+      if (data.originTabId) {
+        chrome.tabs.sendMessage(data.originTabId, {
+          action: "DLIMS_DATA_RESPONSE",
+          data: request.data
+        }).catch(() => {
+          broadcastToPWA("DLIMS_DATA_RESPONSE", request.data);
+        });
+      } else {
+        broadcastToPWA("DLIMS_DATA_RESPONSE", request.data);
+      }
+
+      cleanupWorker(data.targetTabId);
+    });
+  }
+
+  // 4. Handle IRIS Data Response & Cleanup
+  if (request.action === "iris_data_fetched") {
+    chrome.storage.local.get(["originTabId", "targetTabId"], (data) => {
+      if (data.originTabId) {
+        chrome.tabs.sendMessage(data.originTabId, {
+          action: "IRIS_DATA_RESPONSE",
+          data: request.data
+        }).catch(() => {
+          broadcastToPWA("IRIS_DATA_RESPONSE", request.data);
+        });
+      } else {
+        broadcastToPWA("IRIS_DATA_RESPONSE", request.data);
+      }
+
+      cleanupWorker(data.targetTabId);
+    });
+  }
+
+  // 5. Handle Domicile Fetch Request
+  if (request.action === "fetch_domicile_background" && request.id) {
+    const targetUrl = `https://domicile.punjab.gov.pk/AjaxCall.aspx?ID=${request.id}`;
+
+    fetch(targetUrl)
+      .then(response => {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        return response.text();
+      })
+      .then(htmlText => sendResponse({ success: true, data: htmlText }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+
+    return true; // Keep channel open for async response
+  }
+
+  // 6. Handle WhatsApp Tab Management
+  if (request.action === "open_whatsapp_background" && request.targetUrl) {
+    const targetUrl = request.targetUrl;
+
+    chrome.tabs.query({ url: "https://web.whatsapp.com/*" }, (tabs) => {
+      if (tabs && tabs.length > 0) {
+        const existingTab = tabs[0];
+        chrome.tabs.update(existingTab.id, { url: targetUrl, active: true }, () => {
+          chrome.windows.update(existingTab.windowId, { focused: true });
+        });
+      } else {
+        chrome.tabs.create({ url: targetUrl });
+      }
+    });
+  }
+});
+
+// Helper function to broadcast messages if the origin tab reference is lost
+function broadcastToPWA(actionType, dataPayload) {
+  chrome.tabs.query({ url: "https://atauxel.vercel.app/*" }, (tabs) => {
+    tabs.forEach((tab) => {
+      chrome.tabs.sendMessage(tab.id, {
+        action: actionType,
+        data: dataPayload
+      }).catch(() => {}); 
+    });
+  });
+}
+
+// Helper function to handle tab removal and storage clearing
+function cleanupWorker(targetTabId) {
+  if (targetTabId) {
+    chrome.tabs.remove(targetTabId).catch(() => {});
+  }
+
+  chrome.storage.local.remove([
+    "pendingCnic", 
+    "pendingDob", 
+    "targetTabId", 
+    "originTabId",
+    "isSubmitted"
+  ]);
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: "openWithAtauxel",
+    title: "Open with Atauxel",
+    contexts: ["selection", "image", "link", "editable", "page"]
+  });
+});
+
+// Helper: Convert Image URL -> Blob -> Base64
+async function urlToBase64(imageUrl) {
+  try {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.error("Failed to convert image to Base64:", error);
+    return imageUrl;
+  }
+}
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId !== "openWithAtauxel" || !tab?.id) return;
+
+  const rawTabId = tab.id;
+  const rawWindowId = tab.windowId;
+
+  const sessionId = `atauxel_session_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+  let payload = "";
+  const isPageContext = info.mediaType === undefined && !info.selectionText && !info.linkUrl && info.pageUrl;
+
+  let inputIds = [];
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId: rawTabId },
+      func: (sid) => {
+        window.sessionStorage.setItem("ATAUXEL_SESSION_ID", sid);
+        window.ATAUXEL_SESSION_ID = sid;
+
+        if (!window.hasAtauxelSync) {
+          window.hasAtauxelSync = true;
+
+          chrome.storage.onChanged.addListener((changes, area) => {
+            if (area === "local" && changes.atauxelSync) {
+              const data = changes.atauxelSync.newValue || {};
+              const currentSid = window.sessionStorage.getItem("ATAUXEL_SESSION_ID") || window.ATAUXEL_SESSION_ID;
+
+              if (data.sessionId === currentSid && data.inputId) {
+                const targetInput = document.getElementById(data.inputId);
+                if (targetInput) {
+                  targetInput.value = data.value;
+
+                  const tracker = targetInput._valueTracker;
+                  if (tracker) tracker.setValue(data.value);
+
+                  targetInput.dispatchEvent(new Event("input", { bubbles: true }));
+                  targetInput.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+              }
+            }
+          });
+        }
+
+        return Array.from(document.querySelectorAll("input[id], textarea[id]")).map(el => ({
+          id: el.id,
+          label: el.name || el.placeholder || el.id
+        }));
+      },
+      args: [sessionId]
+    });
+
+    if (results && results[0]?.result) {
+      inputIds = results[0].result;
+    }
+  } catch (error) {
+    console.error("Failed to initialize source page listener:", error);
+  }
+
+  if (info.mediaType === "image" && info.srcUrl) {
+    payload = await urlToBase64(info.srcUrl);
+  } else if (info.selectionText) {
+    payload = info.selectionText;
+  } else if (info.srcUrl) {
+    payload = await urlToBase64(info.srcUrl);
+  } else if (info.linkUrl) {
+    payload = info.linkUrl;
+  } else if (info.pageUrl) {
+    payload = info.pageUrl;
+  }
+
+  if (!payload) return;
+
+  const isBase64 = payload.startsWith("data:image/");
+  let imageStorageKey = "";
+
+  if (isBase64) {
+    imageStorageKey = `atauxel_img_${Date.now()}`;
+    await chrome.storage.local.set({ [imageStorageKey]: payload });
+  }
+
+  const encodedPayload = isBase64 ? "" : encodeURIComponent(payload);
+  const encodedInputIds = encodeURIComponent(JSON.stringify(inputIds.map(item => item.id)));
+
+  let targetUrl = `https://atauxel.vercel.app/?data=${encodedPayload}&inputIds=${encodedInputIds}&sessionId=${sessionId}`;
+  if (isBase64) {
+    targetUrl += `&imageKey=${imageStorageKey}`;
+  }
+
+  let atauxelTabId = null;
+
+  if (isPageContext && rawWindowId) {
+    const currentWin = await chrome.windows.get(rawWindowId);
+    const screenLeft = currentWin.left || 0;
+    const screenTop = currentWin.top || 0;
+    const screenWidth = currentWin.width || 1920;
+    const screenHeight = currentWin.height || 1080;
+    const halfWidth = Math.floor(screenWidth / 2);
+
+    await chrome.windows.update(rawWindowId, {
+      state: "normal",
+      left: screenLeft,
+      top: screenTop,
+      width: halfWidth,
+      height: screenHeight,
+      focused: true
+    });
+
+    const rightWin = await chrome.windows.create({
+      url: targetUrl,
+      state: "normal",
+      left: screenLeft + halfWidth,
+      top: screenTop,
+      width: screenWidth - halfWidth,
+      height: screenHeight,
+      focused: true
+    });
+
+    atauxelTabId = rightWin.tabs?.[0]?.id || null;
+  } else {
+    const newTab = await chrome.tabs.create({ url: targetUrl, active: true });
+    atauxelTabId = newTab.id;
+  }
+
+  if (atauxelTabId) {
+    chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
+      if (tabId === atauxelTabId && changeInfo.status === "complete") {
+        chrome.tabs.onUpdated.removeListener(listener);
+
+        chrome.scripting.executeScript({
+          target: { tabId: atauxelTabId },
+          func: async (extractedInputs, payloadData, isImage, storageKey, activeSessionId) => {
+            if (!window.hasAtauxelRelay) {
+              window.hasAtauxelRelay = true;
+              window.addEventListener("message", (event) => {
+                if (event.data?.type === "ATAUXEL_TYPE_SYNC") {
+                  chrome.storage.local.set({
+                    atauxelSync: {
+                      inputId: event.data.inputId,
+                      value: event.data.value,
+                      sessionId: activeSessionId,
+                      ts: Date.now()
+                    }
+                  });
+                }
+              });
+            }
+
+            let outputDiv = document.querySelector("#output");
+            if (!outputDiv) {
+              outputDiv = document.createElement("div");
+              outputDiv.id = "output";
+              document.body.appendChild(outputDiv);
+            }
+
+            const payloadBlock = document.createElement("div");
+            payloadBlock.style.marginBottom = "8px";
+
+            let finalImageSrc = payloadData;
+
+            if (isImage && storageKey) {
+              const data = await chrome.storage.local.get(storageKey);
+              finalImageSrc = data[storageKey] || payloadData;
+              chrome.storage.local.remove(storageKey);
+            }
+
+            if (isImage) {
+              const img = document.createElement("img");
+              img.src = finalImageSrc;
+              img.style.maxWidth = "100%";
+              img.style.borderRadius = "4px";
+              payloadBlock.appendChild(img);              
+            } else {
+              payloadBlock.style.fontWeight = "bold";
+              payloadBlock.textContent = payloadData;
+            }
+            outputDiv.appendChild(payloadBlock);
+
+          },
+          args: [inputIds, payload, isBase64, imageStorageKey, sessionId]
+        });
+      }
+    });
+  }
+});

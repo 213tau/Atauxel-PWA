@@ -1,0 +1,4696 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#ffffff">
+  <title>Atauxel - Cross-Platform Hybrid App</title>
+  
+  <!-- CDNs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.4.0/dist/svg2pdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.11.0/dist/pptxgen.bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.0/dist/tesseract.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+<style>
+        :root {
+  --primary: #0ea5a4;
+  --primary-dark: #0b8281;
+  --success: #28a745;
+  --bg: #f4f7f6;
+  --dark: #0f172a;
+  --border-radius: 8px;
+  --sidebar-width: 260px;
+}
+
+* { box-sizing: border-box; }
+
+@font-face {
+  font-family: 'jameel-noori-nastaleeq';
+  src: url('https://cdn.jsdelivr.net/gh/tariq-abdullah/urdu-web-font-CDN/JameelNooriNastaleeq.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  font-family: Arial, "jameel-noori-nastaleeq", serif;
+  margin: 0;
+  background: linear-gradient(130deg, #ffffff 20%, #e6fcfc 50%, #f0fdf4 100%);
+  color: var(--dark);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+/* --- App Header & Logo --- */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+svg#logo {
+  max-width: 200px;
+  height: auto;
+}
+
+/* --- Floating Zoom Controls --- */
+.zoom-controls {
+  position: fixed;
+  top: 15px;
+  right: 20px;
+  display: flex;
+  gap: 4px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 4px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.zoom-controls button {
+  margin: 0;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 15px;
+}
+
+/* --- Main Layout Grid (Tab-Container Left Flank, Main Right) --- */
+.app-layout {
+  display: flex;
+  flex: 1;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  flex-direction: row; /* tab-container on left, main on right */
+}
+
+/* --- Left Ribbon Tab Container --- */
+.tab-container {
+  width: var(--sidebar-width);
+  background: #ffffff;
+  border-right: 1px solid #e2e8f0;
+  padding: 20px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.01);
+  width: 200;
+}
+
+.tabs-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.tab {
+  padding: 12px 16px;
+  font-size: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  user-select: none;
+  font-weight: 600;
+  color: #475569;
+  text-align: left;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tab:hover {
+  background: #f1f5f9;
+  color: var(--dark);
+  border-color: #cbd5e1;
+}
+
+.tab.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary-dark);
+  box-shadow: 0 2px 6px rgba(14, 165, 164, 0.3);
+}
+
+#svgtools.active {
+  display: flex !important;
+}
+
+/* --- Main Content Area (Right Flank) --- */
+main {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.tab-content {
+  display: none;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Universal Controls Panel --- */
+.app-controls {
+  padding: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  background: #ffffff;
+  border-radius: var(--border-radius);
+  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.printer-panel {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  padding: 12px;
+  border-radius: var(--border-radius);
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+/* --- Inputs, Selects, Buttons --- */
+button, select, input[type="text"], input[type="number"], input[type="date"], input[type="file"] {
+  padding: 9px 14px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: var(--dark);
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+button {
+  cursor: pointer;
+  font-weight: 500;
+  background: #f8fafc;
+}
+button:hover { background: #f1f5f9; border-color: #94a3b8; }
+button.primary { background: var(--primary); color: white; border-color: var(--primary-dark); }
+button.primary:hover { background: var(--primary-dark); }
+button.success { background: var(--success); color: white; border-color: #1e7e34; }
+button.success:hover { background: #218838; }
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(14, 165, 164, 0.15);
+}
+
+/* --- UI Components & Layouts --- */
+.box, .card {
+  border: 1px solid #e2e8f0;
+  padding: 20px;
+  margin-top: 15px;
+  border-radius: var(--border-radius);
+  background: #fff;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+h1 { font-size: 1.4rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; color: var(--dark); margin-top: 0; }
+h3 { font-size: 1.1rem; color: var(--dark); }
+
+canvas {
+  border: 1px solid #cbd5e1;
+  display: block;
+  margin: 15px auto;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--border-radius);
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+pre {
+  background: #0f172a;
+  color: #38bdf8;
+  padding: 15px;
+  max-height: 250px;
+  overflow: auto;
+  border-radius: var(--border-radius);
+  font-family: 'Consolas', monospace;
+  font-size: 0.85rem;
+}
+
+#imageGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+  max-height: 450px;
+  overflow-y: auto;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: var(--border-radius);
+  border: 1px solid #e2e8f0;
+}
+
+.img-item {
+  border: 2px solid transparent;
+  padding: 8px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  text-align: center;
+  background: white;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+.img-item:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
+.img-item.selected { border-color: var(--primary); background: #f0fdf4; }
+.img-item img { width: 100%; height: 100px; object-fit: contain; border-radius: 4px; }
+
+.date-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; }
+.date-table th, .date-table td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; font-size: 14px; }
+.date-table th { background: #f8fafc; }
+
+#output {
+  font-size: 14pt;
+  background: #fff;
+  padding: 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--border-radius);
+  min-height: 250px;
+}
+#output > div:nth-child(odd) { background-color: #f8fafc; }
+
+#main{
+    display:flex;
+  }
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 900px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  .tab-container {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 10px;
+  }
+  .tabs-scroll {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .tab {
+    white-space: nowrap;
+    text-align: center;
+  }
+  #main{
+    display:block !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-controls { padding: 10px; gap: 6px; }
+  button, select, input { width: 100%; font-size: 15px; }
+  .zoom-controls { top: 5px; right: 5px; }
+  #main{
+    display:block !important;
+  }
+}
+
+/* --- Print Styling --- */
+@media print {
+  button, select, input, h3, canvas, label, fieldset, h2, h4, .tab-container, .zoom-controls, .app-controls, svg#logo, #saved {
+    display: none !important;
+  }
+  body { display: block; background: white; zoom: 1 !important; }
+  .app-layout { display: block; }
+  #output > div:nth-child(odd) { background-color: transparent !important; }
+  @page { size: auto; margin: 1cm; }
+  header, .printer-panel { display: none;}
+}
+  </style>
+</head>
+
+<body ondrop="dropHandler(event);">
+
+  <!-- Floating Zoom Tools -->
+  <div class="zoom-controls">
+    <button onclick="zoomIn()" title="Zoom In">+</button>
+    <button onclick="zoomOut()" title="Zoom Out">-</button>
+    <button onclick="resetZoom()" title="Reset Zoom">Reset</button>
+  </div>
+
+  <!-- Header & Logo -->
+  <header>
+    <svg xmlns="http://www.w3.org/2000/svg" width="500" height="200" viewBox="40 40 500 200" id="logo">
+      <g transform="translate(60,60)">
+        <rect width="160" height="160" rx="28" fill="#0EA5A4"></rect>
+        <g transform="translate(20,20)" fill="#fff">
+          <path d="M20 120 L60 10 L100 120 L80 120 L67 86 L53 86 L40 120 Z"></path>
+        </g>
+      </g>
+      <g transform="translate(260,120)">
+        <text x="0" y="26" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="600" fill="#0F172A">Atauxel</text>
+        <text x="0" y="76" font-family="Inter, Arial, sans-serif" font-size="20" fill="#2563EB">Cross-Platform Hybrid App</text>
+      </g>
+    </svg>
+  </header>
+
+  <!-- Universal Top Action Controls -->
+  <div class="app-controls">
+    <input type="file" id="upload" multiple>
+    <select id="imageSelector"></select>
+    <button id="pasteButton">Paste Load</button>
+    <button id="delete">Delete</button>
+    <button id="duplicate">Duplicate</button>
+    <button id="stepDown">Move Up</button>
+    <button id="copyImage">Copy Image</button>
+    <button id="captureScreenBtn">📺 Screen</button>
+  </div>
+<div id="main">
+  <!-- TAB MENU -->
+  <nav class="tab-container">
+    <div class="tabs-scroll" id="tabsScroll">
+      <button class="tab active" onclick="showTab('textEditing')">💎 Text Editing</button>
+      <button class="tab" onclick="showTab('htmlEditing')">💎 HTML Editor</button>
+      <button class="tab" onclick="showTab('imageProcessing')">🖼️ Image</button>
+      <button class="tab" onclick="showTab('svgTools')">🌐 SVG</button>
+      <button class="tab" onclick="showTab('organizeData')" id=organize>🧠 Organize Data</button>            
+      <button class="tab" onclick="showTab('dataManipulator')">📄 Data Manipulator</button>            
+      <button class="tab" onclick="showTab('jszipTools')">JSzip Tools</button>
+      <button class="tab" onclick="showTab('idCardTools')">🖨️ ID</button>
+      <button class="tab" onclick="showTab('picturetools')">Photo</button>              
+      <button class="tab" onclick="showTab('pdfTools')"><svg width="20" height="20" viewBox="-4 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:auto"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M25.6686 26.0962C25.1812 26.2401 24.4656 26.2563 23.6984 26.145C22.875 26.0256 22.0351 25.7739 21.2096 25.403C22.6817 25.1888 23.8237 25.2548 24.8005 25.6009C25.0319 25.6829 25.412 25.9021 25.6686 26.0962ZM17.4552 24.7459C17.3953 24.7622 17.3363 24.7776 17.2776 24.7939C16.8815 24.9017 16.4961 25.0069 16.1247 25.1005L15.6239 25.2275C14.6165 25.4824 13.5865 25.7428 12.5692 26.0529C12.9558 25.1206 13.315 24.178 13.6667 23.2564C13.9271 22.5742 14.193 21.8773 14.468 21.1894C14.6075 21.4198 14.7531 21.6503 14.9046 21.8814C15.5948 22.9326 16.4624 23.9045 17.4552 24.7459ZM14.8927 14.2326C14.958 15.383 14.7098 16.4897 14.3457 17.5514C13.8972 16.2386 13.6882 14.7889 14.2489 13.6185C14.3927 13.3185 14.5105 13.1581 14.5869 13.0744C14.7049 13.2566 14.8601 13.6642 14.8927 14.2326ZM9.63347 28.8054C9.38148 29.2562 9.12426 29.6782 8.86063 30.0767C8.22442 31.0355 7.18393 32.0621 6.64941 32.0621C6.59681 32.0621 6.53316 32.0536 6.44015 31.9554C6.38028 31.8926 6.37069 31.8476 6.37359 31.7862C6.39161 31.4337 6.85867 30.8059 7.53527 30.2238C8.14939 29.6957 8.84352 29.2262 9.63347 28.8054ZM27.3706 26.1461C27.2889 24.9719 25.3123 24.2186 25.2928 24.2116C24.5287 23.9407 23.6986 23.8091 22.7552 23.8091C21.7453 23.8091 20.6565 23.9552 19.2582 24.2819C18.014 23.3999 16.9392 22.2957 16.1362 21.0733C15.7816 20.5332 15.4628 19.9941 15.1849 19.4675C15.8633 17.8454 16.4742 16.1013 16.3632 14.1479C16.2737 12.5816 15.5674 11.5295 14.6069 11.5295C13.948 11.5295 13.3807 12.0175 12.9194 12.9813C12.0965 14.6987 12.3128 16.8962 13.562 19.5184C13.1121 20.5751 12.6941 21.6706 12.2895 22.7311C11.7861 24.0498 11.2674 25.4103 10.6828 26.7045C9.04334 27.3532 7.69648 28.1399 6.57402 29.1057C5.8387 29.7373 4.95223 30.7028 4.90163 31.7107C4.87693 32.1854 5.03969 32.6207 5.37044 32.9695C5.72183 33.3398 6.16329 33.5348 6.6487 33.5354C8.25189 33.5354 9.79489 31.3327 10.0876 30.8909C10.6767 30.0029 11.2281 29.0124 11.7684 27.8699C13.1292 27.3781 14.5794 27.011 15.985 26.6562L16.4884 26.5283C16.8668 26.4321 17.2601 26.3257 17.6635 26.2153C18.0904 26.0999 18.5296 25.9802 18.976 25.8665C20.4193 26.7844 21.9714 27.3831 23.4851 27.6028C24.7601 27.7883 25.8924 27.6807 26.6589 27.2811C27.3486 26.9219 27.3866 26.3676 27.3706 26.1461ZM30.4755 36.2428C30.4755 38.3932 28.5802 38.5258 28.1978 38.5301H3.74486C1.60224 38.5301 1.47322 36.6218 1.46913 36.2428L1.46884 3.75642C1.46884 1.6039 3.36763 1.4734 3.74457 1.46908H20.263L20.2718 1.4778V7.92396C20.2718 9.21763 21.0539 11.6669 24.0158 11.6669H30.4203L30.4753 11.7218L30.4755 36.2428ZM28.9572 10.1976H24.0169C21.8749 10.1976 21.7453 8.29969 21.7424 7.92417V2.95307L28.9572 10.1976ZM31.9447 36.2428V11.1157L21.7424 0.871022V0.823357H21.6936L20.8742 0H3.74491C2.44954 0 0 0.785336 0 3.75711V36.2435C0 37.5427 0.782956 40 3.74491 40H28.2001C29.4952 39.9997 31.9447 39.2143 31.9447 36.2428Z" fill="#EB5757"></path> </g></svg> PDF</button>
+      <button class="tab" onclick="showTab('printTools')">🖨️ Print</button>
+      <button class="tab" onclick="showTab('TabTools')">Tabs</button>
+      <button class="tab" onclick="showTab('canvasTools')">🌀 Web RTC</button>
+      <button class="tab" onclick="showTab('SharedTools')">Web Share API</button>      
+    </div>
+  </nav>
+
+  <!-- MAIN TAB CONTENTS -->
+  <main>
+    <div class="tab-content" id="imageProcessing">
+      <button onclick="savecanvas()" class="primary">Save Canvas</button>
+      <button id="canvastoimage">Canvas to Array</button>      
+      <button id="savecanvas">Save Canvas</button>
+      <button id="warpBtn">Warp Image</button>      
+      <button onclick="contrastStretchingWithHistogramClipping(document.querySelector('canvas'), 2, 'both')">Histogram Clipping Both</button>
+      <button onclick="applyContrastStretching(true);">Auto Light Enhancement</button>
+      <button onclick="edgeAwareAdaptiveThresholdingColorPreserved()">Color Preserved</button>
+      <button id="removePointsBtn">Remove Points</button>
+      <button id="rotate">Rotate Clockwise</button>
+      <button onclick="autoTrimWhiteSpace()">Auto Trim White</button>
+      <button onclick="TrimWhite()">Trim 0.5in</button>
+      <button onclick="autoTrimblackSpace()">Auto Trim Black</button>
+      <button onclick="applyBrightnessAdjustment()">Brightness</button>
+      <button id="resizeimage">Resize (KB)</button>
+      <button onclick="downscaleImage(canvas, 1024, 1024);">Downscale</button>
+      <button onclick="downscaleAllImages(1024,1024);">Downscale All</button>
+      <button onclick="upscaleAndSharpen(canvas, 1024, 1024);">Upscale & Sharpen</button>      
+      <button id="InvertContrastStreching">Invert Contrast</button>
+      <button id="invertcolor">Invert Colors</button>
+      <button onclick="removeBackgroundFromCorners()">Remove Background</button>
+      <button id="sharpenImage">Sharpening Kernel</button>
+      <button onclick="applyMagicFilter()">Magic Filter</button>
+      <button onclick="applyBiHistogramEqualizationWithEdgePreservation()">Bi Histogram Eq</button>
+      <button onclick="adaptiveHistogramEqualization()">CLAHE</button>
+      <button onclick="adaptiveHistogramEqualizationReinhard()">CLAHE Reinhard</button>
+      <button onclick="dualGammaCLAHE(64, 40, 0.5, 1.5);">Dual Exposure CLAHE</button>
+      <button onclick="enhancePhoto(canvas, 1.15, 1.0);">Enhance Photo</button>
+      <button onclick="applyGammaCorrection()">Gamma Correction</button>
+      <button onclick="gradientShadowRemovalWithGuidedFilter(document.querySelector('canvas'));">Shadow Removal</button>
+      <button onclick="applyHighPassFilter()">High Pass</button>
+      <button onclick="applyGaussianBlur()">Gaussian Blur</button>
+      <button onclick="applyGuidedFilter(8, 0.02);">Guided Filter</button>
+      <button onclick="applyMedianBlur()">Median Blur</button>
+      <button onclick="globalContrastStretching()">Global Contrast</button>
+      <button onclick="toneMapReinhardWithExposure()">Tone Mapping</button>
+      <button onclick="enhanceCanvasImageColorAndSharpen()">Color + Sharpen</button>
+      <button onclick="applySobelEdgeDetection()">Sobel Edge</button>
+      <button onclick="applySobelMask()">Sobel Mask</button>
+      <button onclick="unsharpMasking(1.5, 2);">Unsharp Masking</button>
+      <button onclick="removeText();">Remove Text</button>
+      <button onclick="extractTextOnly();">Extract Text</button>
+      <button onclick="contrastStretchingWithHistogramClipping(document.querySelector('canvas'), 1, 'low')">Clip Low</button>
+      <button onclick="contrastStretchingWithHistogramClipping(document.querySelector('canvas'), 2, 'high')">Clip High</button>
+      <button onclick="segmentImageByOtsu()">Otsu Threshold</button>
+      <button onclick="adaptiveLuminanceSegmentation()">Mean Adaptive</button>
+      <button onclick="segmentImageByLuminance()">Luminance Threshold</button>
+      <button onclick="stripShadowsAndBinarize()">Soft Shadow Removal</button>
+      <button onclick="adaptiveLuminanceMaskColor()">Luminance Mask Color</button>
+      <button onclick="adaptiveLuminanceMaskWithContours()">Luminance Mask + Contours</button>
+      <button onclick="extractContoursHybrid()">Contours Filling</button>
+      <button onclick="intelligentEdgeAwareThresholding()">Edge-Aware Thresholding</button>
+      <button onclick="edgeAwareAdaptiveThresholdingSobel()">Edge-Aware (Sobel)</button>      
+      <button onclick="edgeAwareAdaptiveThresholding()">Adaptive Thresholding</button>      
+      <button onclick="convertCanvasToSVG()">Generate SVG</button>
+      <div style="margin-top: 15px;">
+        <label for="rotationSlider">Rotation: </label>
+        <input type="range" id="rotationSlider" min="-45" max="45" value="0" step="0.01" style="width: 100%; max-width: 500px;">
+        <span id="angleValue">0°</span>
+      </div>      
+    </div>
+
+    <div class="tab-content" id="svgTools">                  
+      <div id="main-layout">
+    <div id="controls">
+        <h2>PPTX Pro Suite Editor</h2>
+        <p>Drag & drop a file here or browse to load slides. Click elements to inspect and reposition.</p>
+        <div>
+            <label class="btn file-label">
+                Choose PPTX File
+                <input type="file" id="fileInputsvg" accept=".pdf, .pptx, .svg, image/svg+xml">
+            </label>
+            <button id="clipboardBtn" class="btn"  style="background: black; color: white;">Clipboard SVG</button>
+            <button id="saveBtn" class="btn">Save & Download PPTX</button>
+        </div>
+        <div id="status" class="status-msg"></div>
+        <button id="saveSVG" class="btn">Save & Download SVG</button>
+        <button id="printBtn" class="btn" style="background: green">Print</button>
+      <button id="downloadPdfBtn" onclick="exportEditableSvgToPdf()">Download PDF</button>
+    </div>
+    <div id="fileoutput"></div>
+</div>
+
+<div id="sidebar">
+    <h3>Format Inspector</h3>
+    <div id="no-selection-notice">Select a slide element on the canvas to inspect or adjust its properties.</div>
+    <div id="editor-fields" style="display: none;">
+        <div class="config-group">
+            <label>Text Content</label>
+            <input type="text" id="prop-text">
+        </div>
+        <div class="row" style="margin-top: 10px;">
+            <div class="config-group">
+                <label>Size (px)</label>
+                <input type="number" id="prop-size" min="1">
+            </div>
+            <div class="config-group">
+                <label>Color</label>
+                <input type="color" id="prop-color" style="width:100%; height:38px; background:#1e293b; border:1px solid var(--border-dark); border-radius:6px; cursor:pointer;">
+            </div>
+        </div>
+        <div class="config-group" style="margin-top: 10px;">
+            <label>Style Rules</label>
+            <div class="row">
+                <button id="btn-bold" class="toggle-btn">B</button>
+                <button id="btn-italic" class="toggle-btn">I</button>
+            </div>
+        </div>
+        <hr style="border: none; border-top: 1px solid var(--border-dark); margin: 16px 0;">
+        <div class="row">
+            <div class="config-group">
+                <label>Canvas X</label>
+                <input type="number" id="prop-posX">
+            </div>
+            <div class="config-group">
+                <label>Canvas Y</label>
+                <input type="number" id="prop-posY">
+            </div>
+        </div>
+    </div>
+
+    <div class="kbd-hint">
+        <strong>Shortcuts:</strong><br>
+        <kbd>Arrows</kbd> Move text 1px<br>
+        <kbd>Shift</kbd> + <kbd>Arrows</kbd> Move 10px<br>
+        <kbd>Esc</kbd> Deselect
+    </div>
+</div>
+    </div>
+
+    <div class="tab-content" id="organizeData">  
+    </div>
+    <div class="tab-content" id="htmlEditing">  
+    </div>
+    <div class="tab-content" id="dataManipulator">  
+      <div class="card">
+    <h2>Smart Office Search + Data Extractor</h2>
+    <p style="font-size: 0.85em; color: #666;">Indexes PPTX Slides, <b>Speaker Notes</b>, DOCX Paragraphs, Links, and Phone Numbers.</p>
+    
+    <div class="controls">
+        <!-- Hidden file input capable of handling folders from servers/network shares reliably -->
+        <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;" onchange="handleFolderSelect(event)">
+        <button onclick="document.getElementById('folderInput').click()">📂 Select Folder</button>
+        <button id="btnIndex" onclick="startIndexing()" disabled>⚡ Sync Changes</button>
+        <span id="status">Select folder to begin.</span>
+    </div>
+
+    <div class="progress-bg" id="progressContainer">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div class="controls">
+        <input type="text" id="searchBox" placeholder="Search documents or notes..." onkeyup="if(event.key==='Enter') searchText()">
+        <button onclick="searchText()">🔍 Search</button>
+    </div>
+
+    <div id="results"></div>
+</div>
+    </div>
+
+    <div class="tab-content" id="idCardTools">
+      <button id="idcardcapture">Capture 3.4x2.2in</button>
+      <button id="idcardsgenerate">Generate ID Card</button>
+      <button onclick="idcard()">Resize to ID Card</button>
+      <button id="oneidcard">1 Copy of Each</button>
+      <button id="idcardstacked">Resize Stacked</button>
+    </div>
+
+    <div class="tab-content" id="picturetools">
+      <button id="fourpic">Four Pictures</button>
+      <button id="centrefour">Centre Four</button>
+      <button id="blue">Blue Background</button>
+      <button id="rotate">Rotate 180Deg</button>
+      <button id="border">Black Border</button>
+      <button id="fourpics">4 Photos (100)</button>
+      <button id="fivepics">5 Photos (100)</button>
+      <button onclick="sixpics()">6 Photos (120)</button>
+      <button id="eightpics">8 Photos (150)</button>
+      <button id="coatapply">Coat</button>
+      <button id="circletoggle">Toggle Circle SVG</button>
+      <button id="svg">SVG Path Manipulation</button>
+      <button id="svgpathedit">SVG Path Edit</button>
+      <button id="bringcoat">Bring Coat Upfront</button>      
+    </div>
+
+    <div class="tab-content" id="pdfTools">
+      <button onclick="document.querySelector('#pdfTools').after(document.querySelector('#svg-container'));">Svg Print</button>
+      <button id="mergePdfBtn">Merge PDFs</button>
+      <button id="BookletPDF">Booklet PDFs</button>
+      <button id="downloadFirstPages">First Pages Only</button>
+      <button id="cropPdf">Crop PDF</button>
+      <button id="twopagecrop">Two Page Crop</button>
+      <button id="generatePdf">Images to PDF</button>
+      <button id="ManualdoublesideWithBlanks">Manual Double Side</button>
+      <button id="ManualBookletWithBlanks">Manual Booklet</button>
+      <button id="trueBookletPDF">True Booklet</button>
+      <button id="svgdownload">SVGs Download</button>      
+      <button onclick="svgspanremove()">Svg Span Text Remove</button>
+      <button id="textlayerdisplay">Show/Hide Text Layer</button>
+      <button id="embedsvgimages">Embed SVG Images</button>
+      <button id="pdfpagetocanvas">PDF to Canvas</button>
+      <button id="removetag">Remove Tags</button>
+      <button id="togglesvg">Show/Hide SVG</button>
+      <button id="pdfpageassvg">PDF Page as SVG</button>
+    </div>
+
+    <div class="tab-content" id="printTools">
+      <button id="print">Print</button>
+      <button id="heightresize">Resize to 285mm</button>
+      <button id="centercontent">Center Content</button>
+      <button id="displayblock">Display Block</button>
+      <button id="resizetoA4">Resize to A4</button>      
+      <button id="texttoimage">Add Text to Image</button>
+      <button id="noofprint" onclick="generatefidaPDF()">Pending Page Slip</button>
+      <button onclick="window.location.href='camscanner://scan'">Open CamScanner</button>
+      <button id="scanA4Btn">Scan A4</button>
+    <button id="scanpassport">Passport Scan</button>
+    <div class="printer-panel">
+      <select id="printerSelect">
+        <option value="EPSON L3210 Series">EPSON L3210 Series</option>
+        <option value="EPSON L3210 Series (Pictures)">EPSON L3210 Series (Pictures)</option>
+        <option value="Canon LBP3000 Series PCL5e">Canon LBP3000 Series PCL5e</option>  
+      </select>
+      <button id="printMonoBtn">Print Mono</button>
+      <button id="printColorBtn">Print Color</button>
+      <input id="noofprint" type="number" value="1" min="1" step="1" style="width: 70px;">
+      <select id="duplexSelect">
+        <option value="simplex">Single-sided</option>
+        <option value="duplex">Duplex (Default)</option>
+        <option value="duplexlong">Duplex (Long edge)</option>
+        <option value="duplexshort">Duplex (Short edge)</option>
+      </select>
+    </div>
+    </div>
+
+    <div class="tab-content" id="TabTools">      
+      <button onclick="window.open('https://www.google.com/webhp', '_blank')">Google</button>
+      <button onclick="window.open('https://chatgpt.com/', '_blank')">ChatGPT</button>
+      <button onclick="window.open('https://pixlr.com/editor/', '_blank')">Pixlr</button>
+      <button onclick="window.open('https://boxy-svg.com/app', '_blank')">Boxy SVG</button>
+      <button onclick="window.open('https://www.text-sync.com/en/r/e66q0', '_blank')">Text Sync</button>      
+      <button onclick="window.open('https://vrcentpunjab.com/', '_blank')">Vehicle Card</button>
+      <button onclick="window.open('https://dlims.punjab.gov.pk/elicense', '_blank')">Driving License</button>
+      <button onclick="window.open('https://nims.nadra.gov.pk/nims/home', '_blank')">Nadra Vaccines</button>
+      <button onclick="window.open('https://softskills.oec.gov.pk/portal/soft-skill', '_blank')">Soft Skill Certificate</button>
+      <button onclick="window.open('https://vscode.dev/', '_blank')">VS Code</button>      
+      <button onclick="window.open('https://biosystid.lhc.gov.pk/biosystno', '_blank')">Lahore High Court</button>
+      <button onclick="window.open('https://vulearning.com/Jobs/Category/punjab-government.aspx', '_blank')">Govt Punjab Jobs</button>
+    </div>
+
+    <div class="tab-content" id="SharedTools">
+      <h2>Live Text + File Sync (P2P)</h2>
+      <p><b>Your ID:</b> <span id="myId">...</span></p>
+      <button onclick="copyId()">Copy My ID</button>
+      <p><b>Share this link:</b></p>
+      <input id="shareLink" readonly style="width:100%">
+      <br><br>
+      <input id="peerIdInput" placeholder="Enter peer ID">
+      <button onclick="connect()" class="primary">Connect</button>
+      <br><br>
+      <textarea id="editor1" placeholder="Start typing..." style="width:100%; height:120px;"></textarea>
+      <br><br>
+      <input type="file" id="fileInputP2P">
+      <button onclick="sendFile()">Send File</button>
+      <h3>Received Files:</h3>
+      <ul id="fileList"></ul>
+      <h3>Transfer Progress</h3>
+      <p>Sending:</p>
+      <progress id="sendProgress" value="0" max="100" style="width:100%"></progress>
+      <p>Receiving:</p>
+      <progress id="recvProgress" value="0" max="100" style="width:100%"></progress>
+    </div>
+
+    <div class="tab-content" id="jszipTools">
+      <h1>📊 PPTX Multi Tool Pro <small style="font-weight: normal; font-size: 0.9rem; opacity: 0.7;">v2.0 Robust</small></h1>
+      <div class="box">
+        <strong>Step 1: Load Presentation</strong><br>
+        <input type="file" id="jsfileInput" accept=".pptx" style="width: 100%; max-width: 400px; margin-top:8px;">
+      </div>
+
+      <div class="tabs" style="display: flex; gap: 4px; overflow-x: auto; margin-top: 15px;">
+        <button onclick="switchTab('date')" id="tabDate" class="primary">Dates</button>
+        <button onclick="switchTab('bold')" id="tabBold">Identity Sync</button>
+        <button onclick="switchTab('text')" id="tabText">Global Text</button>
+        <button onclick="switchTab('image')" id="tabImage">Image Swap</button>
+        <button onclick="switchTab('extra')" id="tabExtra">Notes & Extraction</button>
+      </div>
+
+      <div id="dateTool" class="box">
+        <h3>Date Mapping</h3>
+        <p>Map dates from all slides to the master list on Slide 1.</p>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+          <div><label>Start Date:</label><br><input type="date" id="startGenDate"></div>
+          <div><label>Month Gap:</label><br><input type="number" id="monthGap" value="3"></div>
+          <div><label>Duration For Work (Days):</label><br><input type="number" id="dayGap" value="365"></div>
+        </div>
+        <button onclick="generateDateList()" class="primary">Generate Date Pairs</button>
+        <div id="dateEditor" style="display:none; margin-top:15px;">
+          <div style="max-height: 300px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px;">
+            <table class="date-table">
+              <thead><tr><th>Slide</th><th>Start (DD-MM-YYYY)</th><th>End (DD-MM-YYYY)</th></tr></thead>
+              <tbody id="dateListBody"></tbody>
+            </table>
+          </div>
+          <button onclick="applyManualDates()" class="success" style="margin-top:10px; width: 100%;">Sync All Dates to Presentation</button>
+        </div>
+      </div>
+
+      <div id="boldTool" class="box" style="display:none">
+        <h3>Identity Sync</h3>
+        <p>Detects <b>Name S/O Father Name</b> on Slide 2 and applies it everywhere.</p>
+        <button onclick="showMasterIdentity()">Scan Slide 2 for Identity</button>
+        <div id="boldBox"></div>
+        <button onclick="applyGlobalIdentity()" class="primary" id="syncIdentBtn" style="display:none">Apply to All Slides</button>
+      </div>
+
+      <div id="textTool" class="box" style="display:none">
+        <h3>Global Search & Replace</h3>
+        <div style="display: flex; gap: 10px; flex-direction: column;">
+          <select id="textSelect"></select>
+          <input id="newText" placeholder="Replace with...">
+          <button id="copyselect">Copy Text from Select</button>    
+          <button id="randomizedate">Randomize Date</button>
+          <button onclick="addRule()" class="primary">Add Replacement Rule</button>
+        </div>
+        <ul id="rules" style="margin-top: 15px;"></ul>
+        <button onclick="applyTextReplace()" class="success" style="width: 100%;">Run Global Replacement</button>
+      </div>
+
+      <div id="imageTool" class="box" style="display:none">
+        <h3>Image Gallery</h3>
+        <div id="imageGrid">Upload a file to view media...</div>
+        <div id="imageReplaceActions" style="display:none; margin-top:20px; padding: 15px; background: #f0fdf4; border-radius: 8px;">
+          <strong>Replace: <span id="selectedImgName" style="color:var(--primary)"></span></strong><br>
+          <input type="file" id="newImgInput" accept="image/*" style="margin:8px 0;">        
+          <button onclick="processImageReplace('file')" class="primary">Upload & Swap</button>
+          <span>OR</span>
+          <button id="pasteImgBtn" class="primary">Paste from Clipboard</button>
+        </div>
+      </div>
+
+      <div id="extraTool" class="box" style="display:none">
+        <h3>Notes Extractor</h3>
+        <button onclick="extractNotes()" class="primary">Extract Speaker Notes</button>
+        <textarea id="notesArea" rows="10" style="width:100%; margin-top:10px; border-radius: 8px;" placeholder="Notes will appear here..."></textarea>
+      </div>
+
+      <div class="box" style="background: #0f172a; color: white; text-align: center;">
+        <strong>Final Step: Export</strong><br>
+        <button onclick="downloadFinal()" class="success" style="font-size: 1.1rem; margin-top: 10px; padding: 12px 24px;">💾 Download Updated PPTX</button>
+      </div>
+
+      <h3>System Console</h3>
+      <pre id="log">Awaiting file upload...</pre>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="tab-content active" id="textEditing">
+      <div id="output" contenteditable="true" dir="auto">
+        <div><br></div>
+      </div>
+      <div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px;">
+        <button onclick="ocrwarp()">OCR Warp</button>
+        <button onclick="openWhatsApp()" class="success">🟢 WhatsApp</button>
+        <button onclick="openWhatsAppWeb()" class="success">🟢 WhatsApp Web</button>
+        <button onclick="googlesearch()">Google Search</button>
+        <button onclick="openMepcobill()">Open Mepco Bill</button>
+        <button onclick="openGasbill()">Open Suigas Bill</button>        
+        <button id="ocrToggleBtn" data-global-toggled="false" onclick="toggleAllOCRFields()">Toggle Format</button>
+        <button onclick="saveoutput()">Load Output</button>
+        <button id="urduStyle">Urdu Style (Jameel Noori)</button>
+        <button id="generatepptx">Download A4 PPTX</button>
+        <button onclick="editoutput()">Edit Output</button>
+        <button onclick="textup()">TextUp</button>
+        <button onclick="moveLineUp()">Move Line Up</button>
+        <button onclick="moveLineDown()">Move Line Down</button>
+        <button onclick="triggerDomicileFetch()">Domicile</button>
+        <button onclick="DomicileFetch()">Domicile Web</button>
+        <button onclick="licensedata()">License Data</button>
+        <button onclick="irisdata()">IRIS Data</button>
+        <button onclick="tabling()">Text To Table</button>
+        <button onclick="tablingLine()">NewLine To Table</button>
+        <button id="ocrrequired">Canvas to Text</button>
+        <button onclick="googletranslate()">Translate Urdu → English</button>
+        <button onclick="document.querySelector('#output').style.margin = '1in 1in 0.7in 1in';">Margin 0.7in</button>
+        <button id="lowercase">Lowercase</button>
+        <button id="propercase">Propercase</button>
+        <button id="uppercase">Uppercase</button>      
+        <button id="startBtn" onclick="startVoiceTyping('en-US')">Voice Typing (English)</button>
+        <button id="urduBtn" onclick="startVoiceTyping('ur-PK')">Voice Typing (Urdu)</button>
+        <button onclick="svgeditBtn()">Svg Edit & Preview</button>
+        <button onclick="svgtoclipboardBtn()">Svg Copy</button>
+        <button onclick="SVGElementPrint()">SVG Print</button>
+        <button onclick="SVGElementPDF()">SVG PDF</button>
+        <button onclick="svgdownloadBtn()">Svg Download</button>
+        <button onclick="downloadExtensionZip()">Chrome Extension</button>
+      </div>
+
+      <div id="saved" contenteditable="true" style="font-size:16pt; margin-top: 15px; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; background: #fff;">
+        <div>Muhammad&nbsp;</div>
+        <div>0123456789</div>
+        <div>ABCDEFGHIJKLMNOPQRSTUVWXYZ</div>
+        <div>Multan1@</div>
+        <div>Multan</div>  
+        <div>Pakistan</div>  
+      </div>            
+    </div>
+
+    <div class="tab-content" id="canvasTools">    
+      <div id="webrtc" class="box">
+        <h2>WebRTC Text Share (Advanced - Manual Signaling)</h2>
+        <label><strong>Signal Exchange Box:</strong></label>
+        <textarea id="signalBox" placeholder="Paste offer/answer bundle here" style="width:100%; height:100px; margin-bottom:10px;"></textarea>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <button onclick="createOffer()">Create Offer</button>
+          <button onclick="createAnswer()">Create Answer</button>
+          <button onclick="applyRemote()">Apply Remote Signal</button>
+          <button id="sharetofolder">Share To Folder</button>
+          <button id="getfromfolder">Get From Folder</button>
+        </div>
+        <br>
+        <input type="file" id="fileInput" style="margin-bottom:8px;">
+        <button id="sendFileBtn">Send File</button>
+        <hr>
+        <input id="textInput" placeholder="Type text to send..." style="width:100%; margin-bottom:8px;">
+        <p><strong>Received:</strong> <span id="receivedText"></span></p>
+        <button onclick="capturePhoto()" class="primary">📸 Capture Photo</button>
+      </div>
+    </div>
+  </main>
+  </div>
+
+  <div id="array" style="display:none;">
+    <table>
+      <tbody>
+        <tr><td></td><td></td></tr>
+        <tr><td></td><td></td></tr>
+        <tr><td></td><td></td></tr>
+        <tr><td></td><td></td></tr>
+        <tr><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div id="video-container"><video id="camera" autoplay muted playsinline></video></div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="base64.js"></script>  
+  <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.0/dist/tesseract.min.js"></script>
+
+  <script>
+    document.getElementById('captureScreenBtn').addEventListener('click', async () => {
+      try {
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.play();
+
+        video.onloadedmetadata = async () => {
+          // Wait for the video to actually render
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          // Set canvas to video frame size
+          document.querySelector("canvas").width = video.videoWidth;
+          document.querySelector("canvas").height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, document.querySelector("canvas").width, document.querySelector("canvas").height);
+
+          // Stop the video stream (important)
+          stream.getTracks().forEach(track => track.stop());
+         
+        };
+      } catch (err) {
+        alert('Screen capture failed: ' + err.message);
+      }
+    });
+
+    function parsePassportMRZ() {
+      let raw = document.querySelector('#output')?.innerText || '';
+      if (!raw.trim()) {
+        console.warn("❌ Empty #output");
+        return null;
+      }
+
+      // 2️⃣ Extract data using regex patterns
+      //const passportNumber = (raw.match(/\b[A-Z]{2}\d{7,9}\b/))?.[0] || '';
+
+      // 🥇 Try MRZ-style strict pattern first (like VY69104917PAK)
+      const mrzMatch = raw.match(/^([A-Z]{2}[0-9]{7})[0-9]{1}PAK/m);
+      if (mrzMatch) {
+        passportNumber = mrzMatch[1]; // first capturing group = passport number
+      } else {
+        // 🥈 Fallback: general passport detection with fuzzy logic
+        // Match both possible passport patterns
+        const matches = raw.match(/\b[A-Z]{2}\d{7}\b/g) || [];
+
+        let passportNumber = '';
+        if (matches.length) {
+          // If two close but slightly different, keep the one that’s most representative  
+          const [a, b] = matches;
+
+          // quick Levenshtein distance
+          const dist = (s1, s2) => {
+            const dp = Array.from({ length: s1.length + 1 }, () => []);
+            for (let i = 0; i <= s1.length; i++) dp[i][0] = i;
+            for (let j = 0; j <= s2.length; j++) dp[0][j] = j;
+            for (let i = 1; i <= s1.length; i++) {
+              for (let j = 1; j <= s2.length; j++) {
+                dp[i][j] = s1[i - 1] === s2[j - 1]
+                  ? dp[i - 1][j - 1]
+                  : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+              }
+            }
+            return dp[s1.length][s2.length];
+          };
+
+          // If both are almost same (diff ≤ 2), pick the first (cleaner)
+          passportNumber = dist(a, b) <= 2 ? a : b;
+        } else {
+          passportNumber = matches[0];
+        }
+      }
+
+
+      const cnic = (raw.match(/\b(\d{5}[-.\s]?\d{7}[-.\s]?\d)\b/) || [])[1] || '';
+      const normalizedCnic = (cnic || '')
+        .replace(/[.\s]/g, '-')               // convert dots & spaces to dashes
+        .replace(/-+/g, '-')                  // collapse multiple dashes
+        .replace(/(\d{5})-?(\d{7})-?(\d)/, '$1-$2-$3 $1$2$3');
+
+      const nameLine =
+        raw.match(/P<\w{3}([A-Z<]+)/i)?.[1] || // main pattern after country
+        raw.match(/[A-Z]{3,}<<[A-Z<]+/i)?.[0] || '';
+
+      const fullName = nameLine
+        .replace(/</g, ' ')             // replace < with spaces
+        .replace(/\s+/g, ' ')           // collapse multiple spaces
+        .trim()                         // trim ends
+        .split(' ')                     // split into words
+        .filter(w => /^[A-Z]+$/.test(w))// keep valid words
+        .join(' ');
+
+      console.log(fullName);
+
+      const nationality = (raw.match(/\bPAK\b/i))[0].toUpperCase();
+
+      const gender = (raw.match(/\bM\b|\bF\b/i)?.[0] || '').toUpperCase();
+      // DOB: digits between PAK and M/F
+      const dobMatch = raw.match(/PAK[A-Z0-9<]*?(\d{6})[A-Z0-9<]*?[MF]/i);
+      const dob = dobMatch ? dobMatch[1] : '';
+
+      // Gender + Expiry: M/F followed by 6 digits
+      const genderExpiryMatch = raw.match(/(?<!\s)[MF](\d{6})/i);
+      const expiry = genderExpiryMatch ? genderExpiryMatch[1] : '';
+
+
+      // Format helper (YYMMDD → DD-MM-YYYY)
+      const fmt = yymmdd => {
+        if (!yymmdd || yymmdd.length !== 6) return '';
+        const y = +yymmdd.slice(0, 2),
+          m = yymmdd.slice(2, 4),
+          d = yymmdd.slice(4, 6);
+        return `${d}-${m}-${y > 50 ? 1900 + y : 2000 + y}`;
+      };
+
+      // 3️⃣ Construct parsed object
+      const parsed = {
+        fullName,
+        passportNumber,
+        nationality,
+        dob: fmt(dob),
+        gender: gender === 'M' ? 'Male' : gender === 'F' ? 'Female' : gender,
+        expiry: fmt(expiry),
+        normalizedCnic
+      };
+
+      renderTable(parsed);
+      return parsed;
+    }
+
+
+    // 🧱 Helper to show result in HTML
+    function renderTable(parsed) {
+      console.table(parsed);
+      const output = document.querySelector("#output");
+      const htmlTable = `
+    <table border="1" style="border-collapse:collapse; margin-top:10px; width:100%; font-family:sans-serif;">
+      <thead>
+        <tr><th>Field</th><th>Value</th></tr>
+      </thead>
+      <tbody>
+        ${Object.entries(parsed)
+          .map(([key, value]) => `<tr><td>${key}</td><td>${value}</td></tr>`)
+          .join("")}
+      </tbody>
+    </table>
+  `;
+      output.innerHTML += htmlTable;
+    }
+
+// Function to convert text to Proper Case
+function toProperCase(text) {
+    return text.toLowerCase().replace(/\b\p{L}/gu, char => char.toUpperCase());
+}
+
+// Event listener for button click
+document.querySelector("#propercase").addEventListener("click", function() {
+    // Get the current text from #saved
+    const text = document.querySelector("#output").innerText;
+
+    // Convert to proper case
+    const properText = toProperCase(text);
+
+    // Update #saved with proper case
+    document.querySelector("#output").innerText = properText;
+});
+
+document.getElementById("uppercase").addEventListener("click", () => {
+    const output = document.getElementById("output");
+    output.innerText = output.innerText.toUpperCase();
+  });
+
+    document.getElementById("lowercase").addEventListener("click", () => {
+    const selection = window.getSelection();
+    
+    // Check if there is active text selected and it's not empty
+    if (selection.rangeCount > 0 && selection.toString().length > 0) {
+        const range = selection.getRangeAt(0);
+        const selectedText = range.toString();
+        
+        // Convert only the selected text to lowercase
+        const lowerText = selectedText.toLowerCase();
+        
+        // Replace the highlighted text with the lowercase version
+        const newNode = document.createTextNode(lowerText);
+        range.deleteContents();
+        range.insertNode(newNode);
+        
+        selection.removeAllRanges();
+    } else {
+        // Fallback: if nothing is selected, convert the whole output element
+        const output = document.getElementById("output");
+        output.innerText = output.innerText.toLowerCase();
+    }
+});
+
+  </script>
+  <script>
+  const signalBox = document.getElementById("signalBox");
+  const textInput = document.getElementById("textInput");
+  const receivedText = document.getElementById("receivedText");
+
+  let pc, dataChannel;
+  let iceCandidates = [];
+  let role = localStorage.getItem("webrtcRole");
+  let localStream; // To hold the local media stream
+  let remoteVideo = document.createElement("video"); // For displaying the remote peer's video
+
+  // Initialize Peer Connection
+  function initPeer() {
+    pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:global.stun.twilio.com:3478" }
+      ]
+    });
+
+    pc.onicecandidate = event => {
+      if (event.candidate) {
+        iceCandidates.push(event.candidate);
+      } else {
+        saveLocalSignal();
+      }
+    };
+
+    pc.ondatachannel = event => {
+      dataChannel = event.channel;
+      setupDataChannel();
+    };
+
+    // On receiving remote stream (video/audio)
+    pc.ontrack = (event) => {
+  if (!remoteVideo.parentNode) {
+    remoteVideo.autoplay = true;
+    remoteVideo.playsInline = true;
+    remoteVideo.muted = true; // required for autoplay
+    document.body.appendChild(remoteVideo);
+  }
+  remoteVideo.srcObject = event.streams[0];
+};
+  }
+
+  // Setup the data channel for sending and receiving text
+  function setupDataChannel() {
+  dataChannel.onopen = () => {
+    textInput.disabled = false;
+  };
+/*
+  dataChannel.onmessage = (event) => {
+
+    // 📸 PHOTO (base64 image)
+    if (typeof event.data === "string" && event.data.startsWith("data:image")) {
+      const img = document.createElement("img");
+      img.src = event.data;
+      img.style.maxWidth = "100%";
+      img.style.display = "block";
+      img.style.marginTop = "10px";
+      document.body.appendChild(img);
+      return;
+    }
+
+    // 💬 TEXT (existing behavior)
+    receivedText.textContent = event.data;
+  };
+
+  // 💬 Send text (unchanged)
+  textInput.addEventListener("input", () => {
+    if (dataChannel.readyState === "open") {
+      dataChannel.send(textInput.value);
+    }
+  });
+  */
+
+  function handleFileMessage(msg) {
+  if (msg.type === "file-meta") {
+    // Start of new file
+    incomingFileMeta = msg;
+    incomingFileData = [];
+    console.log("Receiving file:", msg.name, msg.size, "bytes");
+  } else if (msg.type === "file-end") {
+    // Assemble the file
+    if (incomingFileMeta && incomingFileData.length > 0) {
+      const blob = new Blob(incomingFileData, { type: incomingFileMeta.type || "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+
+      // Create download link
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = incomingFileMeta.name;
+      a.textContent = `Download ${incomingFileMeta.name}`;
+      a.style.display = "block";
+      a.style.marginTop = "10px";
+      document.body.appendChild(a);
+
+      console.log("File received:", incomingFileMeta.name);
+    } else {
+      console.warn("File end received but no data chunks!");
+    }
+
+    // Reset for next file
+    incomingFileMeta = null;
+    incomingFileData = [];
+  }
+}
+
+
+let incomingFile = null;
+let incomingFileData = [];
+let incomingFileMeta = null;
+
+dataChannel.onmessage = (event) => {
+  // 1️⃣ Handle JSON messages (file metadata / end)
+  if (typeof event.data === "string") {
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "file-meta" || msg.type === "file-end") {
+        handleFileMessage(msg);
+        return; // exit so text/image logic does not run
+      }
+    } catch (err) {
+      // Not JSON, continue
+    }
+  }
+
+  // 2️⃣ Handle base64 images
+  if (typeof event.data === "string" && event.data.startsWith("data:image")) {
+    const img = document.createElement("img");
+    img.src = event.data;
+    img.style.maxWidth = "100%";
+    img.style.display = "block";
+    img.style.marginTop = "10px";
+    document.body.appendChild(img);
+    return;
+  }
+
+  // 3️⃣ Handle text
+  if (typeof event.data === "string") {
+    receivedText.textContent = event.data;
+    return;
+  }
+
+  // 4️⃣ Handle file chunks (ArrayBuffer / Blob)
+  if (event.data instanceof ArrayBuffer || event.data instanceof Blob) {
+    incomingFileData.push(event.data);
+  }
+};
+
+// 💬 Send text (unchanged)
+  textInput.addEventListener("input", () => {
+    if (dataChannel.readyState === "open") {
+      dataChannel.send(textInput.value);
+    }
+  });
+
+}
+
+  // Save the local signaling data (description and ICE candidates)
+  function saveLocalSignal() {
+    const fullSignal = { description: pc.localDescription, candidates: iceCandidates };
+    const json = JSON.stringify(fullSignal, null, 2);
+    signalBox.value = json;
+    localStorage.setItem("webrtcSignal", json);
+    localStorage.setItem("webrtcRole", role);
+    console.log(`Saved ${role} signal to localStorage.`);
+  }
+
+  // Add remote ICE candidates to the peer connection
+  async function addCandidates(candidates) {
+    for (const c of candidates) await pc.addIceCandidate(new RTCIceCandidate(c)).catch(console.error);
+  }
+
+  // Get user media (camera and microphone)
+  /*
+  async function getUserMedia() {
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ 
+        video: {
+        facingMode: { exact: "environment" } // 👈 BACK camera
+      }, audio: true });
+      // Attach local stream to a video element for preview
+      const localVideo = document.createElement("video");
+      localVideo.srcObject = localStream;
+      localVideo.play();
+      document.body.appendChild(localVideo); // Show local video in the DOM
+
+      // Add each media track to the peer connection
+      localStream.getTracks().forEach(track => {
+        pc.addTrack(track, localStream);
+      });
+    } catch (err) {
+      console.error("Error accessing media devices: ", err);
+    }
+  }*/
+
+  // Get user media (camera and microphone)
+async function getUserMedia() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { exact: "environment" } }, // Back camera
+      audio: true
+    });
+
+    // Mute audio initially
+    localStream.getAudioTracks().forEach(track => track.enabled = false);
+
+    // Attach local stream to a video element for preview
+    const localVideo = document.createElement("video");
+    localVideo.srcObject = localStream;
+    localVideo.autoplay = true;
+    localVideo.muted = true; // Mute local preview to avoid echo
+    document.body.appendChild(localVideo);
+
+    // Add each media track to the peer connection
+    localStream.getTracks().forEach(track => {
+      pc.addTrack(track, localStream);
+    });
+
+    // Create button to toggle audio
+    const audioButton = document.createElement("button");
+    audioButton.innerText = "Unmute Audio";
+    audioButton.onclick = () => {
+      const audioTrack = localStream.getAudioTracks()[0];
+      audioTrack.enabled = !audioTrack.enabled;
+      audioButton.innerText = audioTrack.enabled ? "Mute Audio" : "Unmute Audio";
+    };
+    document.body.appendChild(audioButton);
+
+  } catch (err) {
+    console.error("Error accessing media devices: ", err);
+  }
+}
+
+  async function createOffer() {
+  role = "offerer";
+  initPeer();
+
+  // 👇 VERY IMPORTANT (PC has no camera)
+  pc.addTransceiver("video", { direction: "recvonly" });
+  pc.addTransceiver("audio", { direction: "recvonly" });
+
+  dataChannel = pc.createDataChannel("text");
+  setupDataChannel();
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  
+}
+
+    async function createAnswer() {
+  role = "answerer";
+  initPeer();
+
+  await getUserMedia(); // 👈 REQUIRED
+
+  const remote = JSON.parse(signalBox.value);
+  await pc.setRemoteDescription(new RTCSessionDescription(remote.description));
+  await pc.setLocalDescription(await pc.createAnswer());
+  addCandidates(remote.candidates);
+}
+
+
+  // ---- APPLY REMOTE ----
+  async function applyRemote() {
+    if (!pc) initPeer();
+    const remote = JSON.parse(signalBox.value);
+    await pc.setRemoteDescription(new RTCSessionDescription(remote.description));
+    addCandidates(remote.candidates);
+    localStorage.setItem("webrtcRemote", signalBox.value);
+  }
+
+  // ---- AUTO RECONNECT ----
+  window.addEventListener("load", async () => {
+    const savedRole = localStorage.getItem("webrtcRole");
+    const savedSignal = localStorage.getItem("webrtcSignal");
+    const savedRemote = localStorage.getItem("webrtcRemote");
+
+    if (!savedRole || !savedSignal) return console.log("No saved session found.");
+
+    role = savedRole;
+    signalBox.value = savedSignal;
+    initPeer();
+
+    try {
+      const local = JSON.parse(savedSignal);
+      await pc.setLocalDescription(local.description);
+      addCandidates(local.candidates);
+
+      if (savedRemote) {
+        const remote = JSON.parse(savedRemote);
+        await pc.setRemoteDescription(remote.description);
+        addCandidates(remote.candidates);
+        console.log("Remote reapplied. Connection should restore soon.");
+      } else {
+        console.log("Waiting for remote signal...");
+      }
+    } catch (err) {
+      console.warn("Auto-reconnect failed.", err);
+    }
+  });
+
+  document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") {
+    clearAllSignals();
+  }
+});
+
+  function clearAllSignals() {
+    localStorage.removeItem("webrtcSignal");
+    localStorage.removeItem("webrtcRemote");
+    localStorage.removeItem("webrtcRole");
+    signalBox.value = "";
+    console.log("All WebRTC data cleared.");
+}
+
+function capturePhoto() {
+  if (!localStream || dataChannel.readyState !== "open") {
+    alert("Camera or data channel not ready");
+    return;
+  }
+
+  const video = document.createElement("video");
+  video.srcObject = localStream;
+  video.muted = true;
+  video.playsInline = true;
+  video.play();
+
+  video.onloadedmetadata = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
+
+    // 📸 Convert to JPEG (smaller size)
+    const imageData = canvas.toDataURL("image/jpeg", 0.8);
+
+    // 📤 Send to PC
+    dataChannel.send(imageData);
+
+    console.log("Photo sent to PC");
+  };
+}
+
+document.querySelector("#sharetofolder").addEventListener("click", async function(){
+// Save the full offer object as JSON
+  await saveOfferToFile(document.querySelector("textarea").value);
+})
+
+
+// Function to save a string as a text file using File System Access API
+async function saveOfferToFile(offerText) {
+  // Show save file dialog
+  const handle = await window.showSaveFilePicker({
+    suggestedName: "offer.json",
+    types: [
+      {
+        description: "Text Files",
+        accept: { "application/json": [".json"] },
+      },
+    ],
+  });
+
+  // Create a writable stream
+  const writable = await handle.createWritable();
+
+  // Write the offer text to the file
+  await writable.write(offerText);
+
+  // Close the file and save it
+  await writable.close();
+
+  console.log("Offer saved to file!");
+}
+
+// Function to read a file using File System Access API
+async function readFromFile() {
+  try {
+    // Show file open dialog
+    const [fileHandle] = await window.showOpenFilePicker({
+      types: [
+        {
+          description: "JSON Files",
+          accept: { "application/json": [".json"] },
+        },
+      ],
+      multiple: false,
+    });
+
+    // Get the file from the handle
+    const file = await fileHandle.getFile();
+
+    // Read the file content as text
+    const content = await file.text();
+
+    console.log("File content:", content);
+
+    // You can also set it into a textarea
+    document.querySelector("textarea").value = content;
+
+    return content;
+  } catch (err) {
+    console.error("Error reading file:", err);
+  }
+}
+
+document.querySelector("#getfromfolder").addEventListener("click", async function(){
+// Save the full offer object as JSON
+  await readFromFile(document.querySelector("textarea").value);
+})
+
+document.getElementById("sendFileBtn").onclick = () => {
+  const file = document.getElementById("fileInput").files[0];
+  if (file) sendFile(file);
+};
+
+async function sendFile(file) {
+  if (!dataChannel || dataChannel.readyState !== "open") {
+    alert("Data channel is not ready!");
+    return;
+  }
+
+  const chunkSize = 16 * 1024; // 16 KB per chunk
+  const fileReader = new FileReader();
+  let offset = 0;
+
+  // Send file metadata first
+  dataChannel.send(JSON.stringify({
+    type: "file-meta",
+    name: file.name,
+    size: file.size,
+    fileType: file.type
+  }));
+
+  fileReader.addEventListener("error", error => console.error("File reading error:", error));
+  
+  fileReader.addEventListener("load", e => {
+    dataChannel.send(e.target.result); // Send chunk
+    offset += e.target.result.byteLength;
+
+    if (offset < file.size) {
+      readSlice(offset);
+    } else {
+      dataChannel.send(JSON.stringify({ type: "file-end" }));
+      console.log("File sent successfully!");
+    }
+  });
+
+  const readSlice = (o) => {
+  const slice = file.slice(o, o + chunkSize);
+  fileReader.readAsArrayBuffer(slice);
+};
+
+
+  readSlice(0);
+}
+
+
+</script>
+
+  
+  <script>
+    
+
+    document.querySelector("#savecanvas").addEventListener("click", function (e) {
+      // Replace the current image with warped version
+      const newImg = new Image();
+      newImg.src = document.querySelector("canvas").toDataURL();
+      newImg.onload = () => {
+        images[currentImageIndex] = new ImageObject(newImg);
+        loadCurrentImage();
+      };
+    })
+
+    function savecanvas() {
+      const newImg = new Image();
+      newImg.src = document.querySelector("canvas").toDataURL();
+      newImg.onload = () => {
+        images[currentImageIndex] = new ImageObject(newImg);
+        loadCurrentImage();
+      };
+    }
+
+    document.querySelector("#texttoimage").addEventListener("click", function () {
+    const img = document.querySelector("img");
+
+    // Create a container around the image if not already
+    let container = img.parentNode;
+    if (!container.classList.contains("image-text-container")) {
+        const wrapper = document.createElement("div");
+        wrapper.style.position = "relative";
+        wrapper.style.display = "inline-block"; // important to fit image size
+        wrapper.classList.add("image-text-container");
+
+        img.parentNode.insertBefore(wrapper, img);
+        wrapper.appendChild(img);
+
+        container = wrapper;
+    }
+
+    // Create the text div
+    const div = document.createElement("div");
+    div.setAttribute("contenteditable", "true");
+    div.style.cssText = `
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        padding: 10px;
+        line-height: 1.2em;
+        background: rgba(255,255,255,1);
+        // border: 1px solid #333;
+        cursor: move;
+        min-width: 100px;
+        min-height: 50px;
+    `;
+    div.innerHTML = `
+        Ref.No.TNC/22/118
+        <div>Dated: 15-03-2024</div>
+        <div style="text-align: center; font-weight: bold;">TO WHOM IT MAY CONCERN</div>
+        <div style="text-align: justify;">
+            It is certified that Ms. Iram Haq Nawaz D/O Haq Nawaz having CNIC 36302-3472377-2 worked as a Visiting Lecturer in this College from Dec 2020, to Feb 2024.
+            <br>
+            She was hardworking, dedicated employee with a professional attitude and very good job knowledge, during her stay here.
+            <br>
+            We wish her best luck in future.
+        </div>
+    `;
+
+    // Resize handle
+    const resizeHandle = document.createElement("div");
+    resizeHandle.style.cssText = `
+        width: 12px;
+        height: 12px;
+        background: #333;
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        cursor: se-resize;
+    `;
+    div.appendChild(resizeHandle);
+
+    container.appendChild(div);
+
+    // Dragging
+div.onmousedown = function (e) {
+    // Only drag if user clicks on the div background, not on text inside
+    if (e.target !== div) return; // allow text editing
+    if (e.target === resizeHandle) return;
+    
+    e.preventDefault();
+
+    let startX = e.clientX;
+    let startY = e.clientY;
+    const rect = div.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    let offsetX = startX - rect.left;
+    let offsetY = startY - rect.top;
+
+    function moveAt(e) {
+        let newLeft = e.clientX - containerRect.left - offsetX;
+        let newTop = e.clientY - containerRect.top - offsetY;
+
+        // Keep inside container
+        newLeft = Math.max(0, Math.min(newLeft, container.offsetWidth - div.offsetWidth));
+        newTop = Math.max(0, Math.min(newTop, container.offsetHeight - div.offsetHeight));
+
+        div.style.left = newLeft + "px";
+        div.style.top = newTop + "px";
+    }
+
+    function onMouseMove(e) {
+        moveAt(e);
+    }
+
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", function () {
+        document.removeEventListener("mousemove", onMouseMove);
+    }, { once: true });
+};
+
+div.ondragstart = () => false;
+
+    // Resizing
+    resizeHandle.onmousedown = function (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startWidth = div.offsetWidth;
+        const startHeight = div.offsetHeight;
+
+        function doDrag(e) {
+            let newWidth = startWidth + e.clientX - startX;
+            let newHeight = startHeight + e.clientY - startY;
+
+            // Limit to image boundaries
+            newWidth = Math.min(newWidth, container.offsetWidth - div.offsetLeft);
+            newHeight = Math.min(newHeight, container.offsetHeight - div.offsetTop);
+
+            div.style.width = newWidth + "px";
+            div.style.height = newHeight + "px";
+        }
+
+        function stopDrag() {
+            document.removeEventListener("mousemove", doDrag);
+            document.removeEventListener("mouseup", stopDrag);
+        }
+
+        document.addEventListener("mousemove", doDrag);
+        document.addEventListener("mouseup", stopDrag);
+    };
+});
+
+    document.querySelector("#delete").addEventListener("click", function () {
+
+      let idx = currentImageIndex;  // freeze correct index
+
+      images.splice(idx, 1);        // delete correct image
+
+      if (idx >= images.length) {
+        currentImageIndex = images.length - 1;
+      } else {
+        currentImageIndex = idx;
+      }
+
+      updateImageSelector();  // safe now
+      loadCurrentImage();
+    });
+
+    document.querySelector("#duplicate").addEventListener("click", function () {
+      let idx = currentImageIndex;       // freeze current index
+      let currentImage = images[idx];    // get current image
+
+      images.splice(idx + 1, 0, { ...currentImage }); // insert a copy right after current
+
+      currentImageIndex = idx + 1;       // move to the duplicated image
+
+      updateImageSelector();  // update the UI safely
+      loadCurrentImage();     // load the duplicated image
+    });
+    document.querySelector("#stepDown").addEventListener("click", function () {
+  const idx = currentImageIndex;
+
+  if (idx <= 0) return; // already at bottom
+
+  // remove the image
+  const [img] = images.splice(idx, 1);
+
+  // insert it one position down
+  images.splice(idx - 1, 0, img);
+
+  // update index
+  currentImageIndex = idx - 1;
+
+  updateImageSelector();
+  loadCurrentImage();
+});
+
+async function embedImages(svg) {
+    const images = svg.querySelectorAll("image, svg\\:image");
+
+    for (const img of images) {
+
+        const href =
+            img.getAttribute("href") ||
+            img.getAttribute("xlink:href");
+
+        if (!href || href.startsWith("data:"))
+            continue;
+
+        const response = await fetch(href);
+        const blob = await response.blob();
+
+        const reader = new FileReader();
+
+        const base64 = await new Promise(resolve => {
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+
+        img.setAttribute("href", base64);
+        img.setAttributeNS(
+            "http://www.w3.org/1999/xlink",
+            "xlink:href",
+            base64
+        );
+    }
+}
+
+    document.querySelector("#svgdownload").addEventListener("click", async () => {
+
+    const svgs = document.querySelectorAll(
+        "svg:not(#logo), svg\\:svg:not(#logo)"
+    );
+
+    for (const [index, svg] of [...svgs].entries()) {
+
+        await embedImages(svg);
+
+        svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+        svg.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+
+        const svgString = new XMLSerializer().serializeToString(svg);
+
+        const blob = new Blob([svgString], {
+            type: "image/svg+xml;charset=utf-8"
+        });
+
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `image_${index + 1}.svg`;
+
+        a.click();
+
+        URL.revokeObjectURL(url);
+    }
+});
+
+
+
+/*(async function() {
+  try {
+    // Fetch the HTML response
+    const response = await fetch("https://domicile.punjab.gov.pk/AjaxCall.aspx?ID=3630273251681", {
+      method: "GET",
+      mode: "cors"
+    });
+
+    const htmlText = await response.text();
+
+    // Parse the HTML
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlText, "text/html");
+
+    // Select all spans with id containing 'lbl'
+    const spans = doc.querySelectorAll("span[id*='lbl']");
+
+    // Log results
+    spans.forEach(span => {
+      console.log(span.id, ":", span.textContent.trim());
+    });
+
+  } catch (err) {
+    console.error("Error fetching or parsing:", err);
+  }
+})();
+*/
+
+function handleMagicWandClick(e) {
+  const canvas = e.currentTarget;
+  const ctx = canvas.getContext("2d");
+  const width = canvas.width;
+  const height = canvas.height;
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+
+  // Initialize selection mask if not already
+  if (!canvas.selectionMask || canvas.selectionMask.length !== width * height) {
+  canvas.selectionMask = new Uint8Array(width * height);
+}
+
+  const selectionMask = canvas.selectionMask;
+
+  function getColor(x, y) {
+    const i = (y * width + x) * 4;
+    return [data[i], data[i + 1], data[i + 2]];
+  }
+
+  function fuzzyColorMatch(c1, c2, fuzziness = 10) {
+    const dist =
+      (c1[0] - c2[0]) ** 2 +
+      (c1[1] - c2[1]) ** 2 +
+      (c1[2] - c2[2]) ** 2;
+    const maxDist = fuzziness * fuzziness * 30;
+    if (dist >= maxDist) return 0;
+    const prob = 1 - dist / maxDist;
+    return prob * prob;
+  }
+
+  function boxBlurMask(mask, w, h, radius = 3) {
+    const temp = new Float32Array(mask.length);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let sum = 0, count = 0;
+        for (let dx = -radius; dx <= radius; dx++) {
+          const nx = x + dx;
+          if (nx >= 0 && nx < w) { sum += mask[y*w + nx]; count++; }
+        }
+        temp[y*w + x] = sum / count;
+      }
+    }
+    const result = new Float32Array(mask.length);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        let sum = 0, count = 0;
+        for (let dy = -radius; dy <= radius; dy++) {
+          const ny = y + dy;
+          if (ny >= 0 && ny < h) { sum += temp[ny*w + x]; count++; }
+        }
+        result[y*w + x] = sum / count;
+      }
+    }
+    const blurredMask = new Uint8Array(mask.length);
+    for(let i=0;i<result.length;i++){ blurredMask[i] = result[i] > 0.1 ? 1 : 0; }
+    return blurredMask;
+  }
+
+  function normalizeFuzzyMask(mask) {
+    const normalized = new Uint8Array(mask.length);
+    for (let i = 0; i < mask.length; i++) normalized[i] = mask[i] > 0.25 ? 1 : 0;
+    return normalized;
+  }
+
+  function addMask(newMask) {
+    for (let i = 0; i < selectionMask.length; i++) {
+      if (newMask[i]) selectionMask[i] = 1;
+    }
+  }
+
+  function redrawWithMask() {
+    const output = ctx.createImageData(width, height);
+    const outData = output.data;
+    for (let i = 0; i < width * height; i++) {
+      if (!selectionMask[i]) {
+        outData[i*4] = data[i*4];
+        outData[i*4+1] = data[i*4+1];
+        outData[i*4+2] = data[i*4+2];
+        outData[i*4+3] = 255;
+      } else {
+        outData[i*4+3] = 0;
+      }
+    }
+    ctx.putImageData(output, 0, 0);
+  }
+
+  // Get click position
+  const rect = canvas.getBoundingClientRect();
+  const xClick = Math.floor((e.clientX - rect.left) * width / canvas.clientWidth);
+  const yClick = Math.floor((e.clientY - rect.top) * height / canvas.clientHeight);
+  if (xClick < 0 || yClick < 0 || xClick >= width || yClick >= height) return;
+
+  const targetColor = getColor(xClick, yClick);
+  const mask = new Float32Array(width*height);
+  const visited = new Uint8Array(width*height);
+  const stack = [[xClick, yClick]];
+
+  while(stack.length) {
+    const [x, y] = stack.pop();
+    if (x < 0 || y < 0 || x >= width || y >= height) continue;
+    const idx = y*width + x;
+    if (visited[idx]) continue;
+    visited[idx] = 1;
+
+    const currentColor = getColor(x, y);
+    if (fuzzyColorMatch(currentColor, targetColor) > 0.05) {
+      mask[idx] = 1;
+      stack.push([x+1, y]);
+      stack.push([x-1, y]);
+      stack.push([x, y+1]);
+      stack.push([x, y-1]);
+    }
+  }
+
+  const feathered = boxBlurMask(normalizeFuzzyMask(mask), width, height, 3);
+  addMask(feathered);
+  redrawWithMask();
+}
+
+function removeBackgroundFromCorners(fuzziness = 10) {
+  const canvas = document.getElementById("canvas");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  const width = canvas.width;
+  const height = canvas.height;
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const data = imageData.data;
+
+  // 1. Target starting corners: [0,0] (upper-left) and [width-1, 0] (upper-right)
+  const seedPoints = [
+    [0, 0],
+    [width - 1, 0]
+  ];
+
+  // 2. Local state tracking
+  const mask = new Float32Array(width * height);
+  const visited = new Uint8Array(width * height);
+
+  function getColor(x, y) {
+    const i = (y * width + x) * 4;
+    return [data[i], data[i + 1], data[i + 2]];
+  }
+
+  function fuzzyColorMatch(c1, c2) {
+    const dist =
+      (c1[0] - c2[0]) ** 2 +
+      (c1[1] - c2[1]) ** 2 +
+      (c1[2] - c2[2]) ** 2;
+    const maxDist = fuzziness * fuzziness * 30;
+    if (dist >= maxDist) return 0;
+    const prob = 1 - dist / maxDist;
+    return prob * prob;
+  }
+
+  // 3. Flood fill both corners in a single unified traversal loop
+  for (const [startX, startY] of seedPoints) {
+    const targetColor = getColor(startX, startY);
+    const stack = [[startX, startY]];
+
+    while (stack.length) {
+      const [x, y] = stack.pop();
+      if (x < 0 || y < 0 || x >= width || y >= height) continue;
+
+      const idx = y * width + x;
+      if (visited[idx]) continue;
+      visited[idx] = 1;
+
+      const currentColor = getColor(x, y);
+      if (fuzzyColorMatch(currentColor, targetColor) > 0.05) {
+        mask[idx] = 1;
+        stack.push([x + 1, y]);
+        stack.push([x - 1, y]);
+        stack.push([x, y + 1]);
+        stack.push([x, y - 1]);
+      }
+    }
+  }
+
+  // 4. Single-pass Box Blur for edge softening
+  const radius = 3;
+  const temp = new Float32Array(width * height);
+
+  // Horizontal pass
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let sum = 0, count = 0;
+      for (let dx = -radius; dx <= radius; dx++) {
+        const nx = x + dx;
+        if (nx >= 0 && nx < width) {
+          sum += (mask[y * width + nx] > 0.25 ? 1 : 0);
+          count++;
+        }
+      }
+      temp[y * width + x] = sum / count;
+    }
+  }
+
+  // Vertical pass & write directly to output ImageData
+  const output = ctx.createImageData(width, height);
+  const outData = output.data;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let sum = 0, count = 0;
+      for (let dy = -radius; dy <= radius; dy++) {
+        const ny = y + dy;
+        if (ny >= 0 && ny < height) {
+          sum += temp[ny * width + x];
+          count++;
+        }
+      }
+      
+      const idx = y * width + x;
+      const isSelected = (sum / count) > 0.1;
+
+      if (!isSelected) {
+        outData[idx * 4] = data[idx * 4];
+        outData[idx * 4 + 1] = data[idx * 4 + 1];
+        outData[idx * 4 + 2] = data[idx * 4 + 2];
+        outData[idx * 4 + 3] = 255;
+      } else {
+        outData[idx * 4 + 3] = 0; // Transparent
+      }
+    }
+  }
+
+  // 5. Draw result to canvas
+  ctx.putImageData(output, 0, 0);
+}
+
+/*
+window.onbeforeprint = function () {
+    document.querySelectorAll(".tab-content.active")?.style.display = "none";
+};
+*/
+window.onafterprint = function () {
+    document.querySelector(".tab-content.active").style.display = "";
+};
+
+function svgspanremove(){
+  document.querySelectorAll("svg tspan").forEach(function(e){
+    e.style.display = "none";
+});
+document.querySelector("#textlayerdisplay").click();
+document.querySelectorAll(".text-layer span").forEach(function(e){
+  e.setAttribute("contenteditable", 'true');
+})
+}
+
+function editoutput(){
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const digits = "0123456789".split("");
+
+let picker = null;
+let savedRange = null;
+
+const output = document.getElementById("output");
+
+output.addEventListener("mouseup", () => {
+  const sel = window.getSelection();
+
+  if (!sel || sel.rangeCount === 0 || sel.toString().length !== 1) {
+    removePicker();
+    return;
+  }
+
+  const range = sel.getRangeAt(0);
+
+  // Ensure selection is inside #output
+  if (!output.contains(range.commonAncestorContainer)) {
+    removePicker();
+    return;
+  }
+
+  showPicker(range);
+});
+
+document.addEventListener("mousedown", (e) => {
+  if (picker && !picker.contains(e.target)) {
+    removePicker();
+  }
+});
+
+function showPicker(range) {
+  removePicker();
+
+  // Save selection
+  savedRange = range.cloneRange();
+
+  picker = document.createElement("div");
+  Object.assign(picker.style, {
+    position: "absolute",
+    background: "#f5f5f5",
+    border: "1px solid #000",
+    padding: "6px",
+    fontFamily: "monospace",
+    zIndex: 1000
+  });
+
+  // Alphabets (3 rows)
+  letters.forEach((ch, i) => {
+    picker.append(createChar(ch));
+    if ((i + 1) % 9 === 0) picker.append(document.createElement("br"));
+  });
+
+  picker.append(document.createElement("br"));
+
+  // Digits (2 rows)
+  digits.forEach((ch, i) => {
+    picker.append(createChar(ch));
+    if ((i + 1) % 5 === 0) picker.append(document.createElement("br"));
+  });
+
+  //picker.append(document.createElement("br"));
+
+  // Space and Enter
+  // Space and Enter
+picker.append(createChar(" ", "␣"));  // Display ␣ but insert space
+picker.append(createChar("<br>", "↵")); // Display ↵ but insert <br>
+
+
+  document.body.appendChild(picker);
+
+  const rect = range.getBoundingClientRect();
+  picker.style.left = rect.left + window.scrollX + "px";
+  picker.style.top = rect.bottom + window.scrollY + "px";
+}
+
+
+function createChar(charToInsert, displayChar = null) {
+  const span = document.createElement("span");
+  span.textContent = displayChar || charToInsert;
+  span.style.cursor = "pointer";
+  span.style.padding = "2px";
+
+  span.addEventListener("mousedown", (e) => {
+    e.preventDefault(); // keep selection alive
+
+    if (!savedRange) return;
+
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRange);
+
+    savedRange.deleteContents();
+
+    // Special handling for <br>
+    if (charToInsert === "<br>") {
+      const br = document.createElement("br");
+      savedRange.insertNode(br);
+
+      // Move cursor after the <br>
+      savedRange.setStartAfter(br);
+      savedRange.setEndAfter(br);
+    } else {
+      savedRange.insertNode(document.createTextNode(charToInsert));
+    }
+
+    sel.removeAllRanges();
+    removePicker();
+  });
+
+  return span;
+}
+
+
+
+function removePicker() {
+  if (picker) {
+    picker.remove();
+    picker = null;
+  }
+  savedRange = null;
+}
+}
+  </script>
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+<script>
+
+const CHUNK_SIZE = 16 * 1024;
+
+// Peer setup
+function generateShortId() {
+  return Math.random().toString(36).substring(2, 8);
+}
+
+const peer = new Peer(generateShortId(), {
+  config: {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      { urls: "stun:stun2.l.google.com:19302" }
+    ]
+  }
+});
+let conn = null;
+
+let myPeerId = null;
+let isRemoteUpdate = false;
+
+let incomingFiles = {};
+let incomingText = {};
+
+// UI
+const editor = document.getElementById("output");
+const myIdEl = document.getElementById("myId");
+const peerIdInput = document.getElementById("peerIdInput");
+const shareLinkInput = document.getElementById("shareLink");
+
+// INIT
+peer.on("open", (id) => {
+  myPeerId = id;
+  myIdEl.innerText = id;
+
+  const url = `${window.location.origin}${window.location.pathname}?peer=${id}`;
+  shareLinkInput.value = url;
+});
+
+// CONNECTION
+peer.on("connection", (connection) => {
+  conn = connection;
+  setupConn();
+});
+
+function connect() {
+  const peerId = peerIdInput.value.trim();
+
+  if (!peerId) return alert("Enter peer ID");
+  if (peerId === myPeerId) return alert("Cannot connect to yourself");
+
+  conn = peer.connect(peerId);
+  setupConn();
+}
+
+function setupConn() {
+  if (!conn) return;
+
+  conn.on("open", () => {
+    console.log("Connected to:", conn.peer);
+  });
+
+  conn.on("data", handleData);
+
+  conn.on("close", () => {
+    console.log("Disconnected");
+  });
+}
+
+// RECEIVE DATA
+function handleData(data) {
+  const recvProgress = document.getElementById("recvProgress");
+
+  // FILE META
+  if (data.type === "file-meta") {
+    incomingFiles = {
+      name: data.name,
+      fileType: data.fileType,
+      chunks: [],
+      totalChunks: data.totalChunks
+    };
+    recvProgress.value = 0;
+  }
+
+  // FILE CHUNK
+  else if (data.type === "file-chunk") {
+    incomingFiles.chunks[data.index] = data.chunk;
+
+    const received = incomingFiles.chunks.filter(Boolean).length;
+    recvProgress.value = (received / incomingFiles.totalChunks) * 100;
+  }
+
+  // FILE COMPLETE
+  else if (data.type === "file-complete") {
+    const blob = new Blob(incomingFiles.chunks, {
+      type: incomingFiles.fileType || "application/octet-stream"
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const li = document.createElement("li");
+
+    // IMAGE PREVIEW
+    if (incomingFiles.fileType && incomingFiles.fileType.startsWith("image/")) {
+      const img = document.createElement("img");
+      img.src = url;
+      li.appendChild(img);
+    }
+
+    // DOWNLOAD LINK
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = incomingFiles.name;
+    a.innerText = "Download " + incomingFiles.name;
+
+    li.appendChild(a);
+    document.getElementById("fileList").appendChild(li);
+  }
+
+  // TEXT META
+  else if (data.type === "text-meta") {
+    incomingText = {
+      chunks: [],
+      totalChunks: data.totalChunks
+    };
+  }
+
+  // TEXT CHUNK
+  else if (data.type === "text-chunk") {
+    incomingText.chunks[data.index] = data.chunk;
+  }
+
+  // TEXT COMPLETE
+  else if (data.type === "text-complete") {
+    isRemoteUpdate = true;
+    editor.innerHTML = incomingText.chunks.join("");
+    isRemoteUpdate = false;
+  }
+}
+
+// TEXT SYNC
+editor.addEventListener("input", () => {
+  if (!conn || !conn.open || isRemoteUpdate) return;
+
+  const text = editor.innerHTML;
+  const totalChunks = Math.ceil(text.length / CHUNK_SIZE);
+
+  conn.send({ type: "text-meta", totalChunks });
+
+  for (let i = 0; i < totalChunks; i++) {
+    const chunk = text.slice(i * CHUNK_SIZE, (i + 1) * CHUNK_SIZE);
+
+    conn.send({
+      type: "text-chunk",
+      chunk,
+      index: i
+    });
+  }
+
+  conn.send({ type: "text-complete" });
+});
+
+// FILE SEND
+document.getElementById("fileInput").addEventListener("change", sendFile);
+
+function sendFile() {
+  const file = document.getElementById("fileInput").files[0];
+  if (!file || !conn || !conn.open) {
+    return alert("Select file & connect first");
+  }
+
+  const sendProgress = document.getElementById("sendProgress");
+  sendProgress.value = 0;
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const buffer = reader.result;
+    const totalChunks = Math.ceil(buffer.byteLength / CHUNK_SIZE);
+
+    conn.send({
+      type: "file-meta",
+      name: file.name,
+      fileType: file.type,
+      totalChunks
+    });
+
+    let offset = 0;
+    let index = 0;
+
+    function sendChunk() {
+      const chunk = buffer.slice(offset, offset + CHUNK_SIZE);
+
+      conn.send({
+        type: "file-chunk",
+        chunk,
+        index
+      });
+
+      offset += CHUNK_SIZE;
+      index++;
+
+      sendProgress.value = (index / totalChunks) * 100;
+
+      if (offset < buffer.byteLength) {
+        setTimeout(sendChunk, 0);
+      } else {
+        conn.send({ type: "file-complete" });
+      }
+    }
+
+    sendChunk();
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+// COPY ID
+function copyId() {
+  navigator.clipboard.writeText(myPeerId);
+  alert("Copied!");
+}
+
+// URL AUTO CONNECT
+const params = new URLSearchParams(window.location.search);
+const peerFromURL = params.get("peer");
+
+if (peerFromURL) {
+  peerIdInput.value = peerFromURL;
+  
+  // Wait a split second for PeerJS to fully open its own connection before dialing out
+  peer.on("open", () => {
+    connect();
+  });
+}
+
+</script>
+
+  <script>
+const pdfInput = document.getElementById('upload');
+const printerSelect = document.getElementById('printerSelect');
+const duplexSelect = document.getElementById('duplexSelect');
+
+function sendPrintJob(printMode) {
+  if (!pdfInput.files.length) return alert("Please choose at least one PDF!");
+
+  const formData = new FormData();
+  for (let i = 0; i < pdfInput.files.length; i++) {
+    formData.append('pdfs', pdfInput.files[i]); // multiple files
+  }
+  formData.append('mode', printMode);
+  formData.append('printer', printerSelect.value);
+  formData.append('duplex', duplexSelect.value); // ✅ NEW
+  formData.append('nop', parseInt(document.querySelector("input#noofprint").value) || 1); // ✅ NEW
+
+  const serverURL = "http://192.168.18.104:3000/print";
+
+  fetch(serverURL, {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => response.text())
+  .then(data => alert(data))
+  .catch(err => {
+    console.error("Error:", err);
+    alert("Failed to send print job.");
+  });
+}
+
+document.getElementById('printMonoBtn').addEventListener('click', () => sendPrintJob('monochrome'));
+document.getElementById('printColorBtn').addEventListener('click', () => sendPrintJob('color'));
+
+</script>
+<script>
+let app = { 
+    zip: null, slides: [], cache: {}, doms: {}, 
+    imageUrls: [], rules: [], dates: [], selectedImagePath: null 
+};
+
+const log = (msg) => {
+    const el = document.getElementById("log");
+    el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`;
+    el.scrollTop = el.scrollHeight;
+};
+
+// --- DOM UTILS ---
+function getSlideDOM(path) {
+    if (!app.doms[path]) {
+        const parser = new DOMParser();
+        app.doms[path] = parser.parseFromString(app.cache[path], "application/xml");
+    }
+    return app.doms[path];
+}
+
+function syncDOMToZip(path) {
+    if (!app.doms[path]) return;
+    const serializer = new XMLSerializer();
+    const xmlStr = serializer.serializeToString(app.doms[path]);
+    app.cache[path] = xmlStr;
+    app.zip.file(path, xmlStr);
+}
+
+// --- FILE LOADING ---
+document.getElementById("jsfileInput").addEventListener("change", async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+        log("Parsing PPTX structure...");
+        app.zip = await JSZip.loadAsync(await file.arrayBuffer());
+        
+        // Sort slides numerically (slide1, slide2, slide10...)
+        app.slides = Object.keys(app.zip.files)
+            .filter(f => /^ppt\/slides\/slide\d+\.xml$/.test(f))
+            .sort((a,b) => {
+                const numA = parseInt(a.match(/\d+/)[0]);
+                const numB = parseInt(b.match(/\d+/)[0]);
+                return numA - numB;
+            });
+
+        for (let s of app.slides) {
+            app.cache[s] = await app.zip.file(s).async("string");
+        }
+
+        log(`Loaded ${app.slides.length} slides successfully.`);
+        refreshTextList();
+        loadImagesToGallery();
+    } catch (err) { log("Error: " + err.message); }
+});
+
+// --- IMAGE TOOL ---
+async function loadImagesToGallery() {
+    const grid = document.getElementById("imageGrid");
+    grid.innerHTML = "Scanning media...";
+    app.imageUrls.forEach(url => URL.revokeObjectURL(url));
+    app.imageUrls = [];
+
+    // Filter out directories (paths ending with '/')
+    const media = Object.keys(app.zip.files).filter(f => f.startsWith("ppt/media/") && !f.endsWith("/"));
+    if (!media.length) { grid.innerHTML = "No images found."; return; }
+
+    grid.innerHTML = "";
+    for (let path of media) {
+        const zipFile = app.zip.file(path);
+        
+        // Ensure the file object actually exists
+        if (!zipFile) continue;
+
+        const blob = await zipFile.async("blob");
+        const url = URL.createObjectURL(blob);
+        app.imageUrls.push(url);
+
+        const item = document.createElement("div");
+        item.className = "img-item";
+        item.onclick = () => {
+            app.selectedImagePath = path;
+            document.querySelectorAll(".img-item").forEach(el => el.classList.remove("selected"));
+            item.classList.add("selected");
+            document.getElementById("imageReplaceActions").style.display = "block";
+            document.getElementById("selectedImgName").textContent = path.split('/').pop();
+        };
+        item.innerHTML = `<img src="${url}" loading="lazy"><div style="font-size:10px; margin-top:5px;">${path.split('/').pop()}</div>`;
+        grid.appendChild(item);
+    }
+}
+
+async function processImageReplace() {
+    const file = document.getElementById("newImgInput").files[0];
+    if (!app.selectedImagePath || !file) return;
+    app.zip.file(app.selectedImagePath, await file.arrayBuffer());
+    log("Swapped: " + app.selectedImagePath);
+    loadImagesToGallery();
+}
+
+// --- IDENTITY TOOL ---
+function showMasterIdentity() {
+    if (!app.slides.length) return;
+    const doc = getSlideDOM(app.slides[1]);
+    const runs = [...doc.getElementsByTagName("a:r")];
+    let name = "", father = "";
+
+    for (let i = 0; i < runs.length; i++) {
+        const txt = runs[i].textContent || "";
+        if (txt.toUpperCase().includes("S/O")) {
+            name = runs[i-1]?.textContent.trim() || "";
+            father = runs[i+1]?.textContent.trim() || "";
+            break;
+        }
+    }
+
+    if (name) {
+        document.getElementById("boldBox").innerHTML = `
+            <div class="identity-card">
+                <strong>Found Pattern:</strong><br>
+                Name: <input id="masterName" value="${name}"><br>
+                Father: <input id="masterFather" value="${father}">
+            </div>`;
+        document.getElementById("syncIdentBtn").style.display = "block";
+    } else {
+        document.getElementById("boldBox").innerHTML = "<p style='color:red'>Could not find 'Name S/O Father' pattern on Slide 1.</p>";
+    }
+}
+
+function applyGlobalIdentity() {
+    const name = document.getElementById("masterName").value;
+    const father = document.getElementById("masterFather").value;
+
+    app.slides.forEach(path => {
+        const doc = getSlideDOM(path);
+        const runs = [...doc.getElementsByTagName("a:r")];
+        let changed = false;
+        for (let i = 0; i < runs.length; i++) {
+            const tNode = runs[i].getElementsByTagName("a:t")[0];
+            if (tNode && tNode.textContent.toUpperCase().includes("S/O")) {
+                if (runs[i-1]?.getElementsByTagName("a:t")[0]) runs[i-1].getElementsByTagName("a:t")[0].textContent = name + " ";
+                if (runs[i+1]?.getElementsByTagName("a:t")[0]) runs[i+1].getElementsByTagName("a:t")[0].textContent = father;
+                changed = true;
+            }
+        }
+        if (changed) syncDOMToZip(path);
+    });
+    log("Identity updated across all slides.");
+}
+
+// --- DATE LOGIC ---
+// --- UPDATED DATE LOGIC ---
+function generateDateList() {
+    const startVal = document.getElementById("startGenDate").value;
+    if (!startVal || app.slides.length < 2) return alert("Select start date and load file.");
+    
+    const mGap = parseInt(document.getElementById("monthGap").value);
+    const dGap = parseInt(document.getElementById("dayGap").value);
+    const dateRegex = /\b\d{1,2}[-\/. ]\d{1,2}[-\/. ]\d{2,4}\b/; // Pattern to detect a date
+
+    let currentStart = new Date(startVal);
+    const tbody = document.getElementById("dateListBody");
+    tbody.innerHTML = "";
+    
+    // Clear any previous mapping
+    app.activeDateSlides = []; 
+
+    // Skip Slide 1 (index 0) and check others
+    for (let i = 1; i < app.slides.length; i++) {
+        const path = app.slides[i];
+        const doc = getSlideDOM(path);
+        const hasDate = [...doc.getElementsByTagName("a:t")].some(node => dateRegex.test(node.textContent));
+
+        // SKIP LOGIC: If no date pattern is found, skip this slide
+        if (!hasDate) {
+            log(`Skipping Slide ${i+1}: No date pattern found.`);
+            continue;
+        }
+
+        // Keep track of which slide index we are actually using
+        app.activeDateSlides.push(path);
+
+        // Calculate Dates
+        let currentEnd = new Date(currentStart);
+        currentEnd.setDate(currentEnd.getDate() + dGap);
+        
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-slide-path", path); // Store path for sync
+        tr.innerHTML = `
+            <td>Slide ${i+1}</td>
+            <td><input type="date" class="m-start" value="${currentStart.toISOString().split('T')[0]}"></td>
+            <td><input type="date" class="m-end" value="${currentEnd.toISOString().split('T')[0]}"></td>`;
+        tbody.appendChild(tr);
+
+        // Set next Start Date
+        let nextStart = new Date(currentEnd);
+        nextStart.setMonth(nextStart.getMonth() + mGap);
+        currentStart = nextStart; 
+    }
+    
+    if (app.activeDateSlides.length === 0) {
+        log("No slides with dates were found.");
+    } else {
+        document.getElementById("dateEditor").style.display = "block";
+    }
+}
+
+function applyManualDates() {
+    const rows = document.querySelectorAll("#dateListBody tr");
+    const regex = /\b\d{1,2}[-\/. ]\d{1,2}[-\/. ]\d{2,4}\b/g;
+    let globalDates = [];
+
+    const fmt = (v) => v.split('-').reverse().join('-');
+
+    rows.forEach((row) => {
+        const sInput = row.querySelector(".m-start").value;
+        const eInput = row.querySelector(".m-end").value;
+        const path = row.getAttribute("data-slide-path");
+
+        const s = fmt(sInput), e = fmt(eInput);
+        globalDates.push(s, e);
+
+        // Apply to the specific slide
+        const doc = getSlideDOM(path);
+        let changed = false;
+        [...doc.getElementsByTagName("a:t")].forEach(node => {
+            if (regex.test(node.textContent)) {
+                let toggle = 0;
+                node.textContent = node.textContent.replace(regex, () => (toggle++ % 2 === 0 ? s : e));
+                changed = true;
+            }
+        });
+        if (changed) syncDOMToZip(path);
+    });
+
+    // Update Slide 1 Summary
+    const masterDoc = getSlideDOM(app.slides[0]);
+    let idx = 0;
+    [...masterDoc.getElementsByTagName("a:t")].forEach(node => {
+        if(regex.test(node.textContent)) {
+            node.textContent = node.textContent.replace(regex, () => globalDates[idx++] || "---");
+        }
+    });
+    syncDOMToZip(app.slides[0]);
+    log(`Dates synced for ${rows.length} slides.`);
+}
+
+// --- TEXT TOOL ---
+function refreshTextList() {
+    const set = new Set();
+    app.slides.forEach(s => {
+        const doc = getSlideDOM(s);
+        [...doc.getElementsByTagName("a:t")].forEach(t => { if(t.textContent.trim()) set.add(t.textContent.trim()); });
+    });
+    const sel = document.getElementById("textSelect");
+    sel.innerHTML = [...set].sort().map(t => `<option value="${t}">${t.substring(0,60)}</option>`).join("");
+}
+
+function addRule() {
+    const oldV = document.getElementById("textSelect").value;
+    const newV = document.getElementById("newText").value;
+    if (!newV) return;
+    app.rules.push({old: oldV, new: newV});
+    const li = document.createElement("li"); li.textContent = `${oldV} → ${newV}`;
+    document.getElementById("rules").appendChild(li);
+}
+
+function applyTextReplace() {
+    app.slides.forEach(s => {
+        const doc = getSlideDOM(s);
+        let changed = false;
+        [...doc.getElementsByTagName("a:t")].forEach(node => {
+            app.rules.forEach(r => { if(node.textContent.trim() === r.old) { node.textContent = r.new; changed = true; }});
+        });
+        if (changed) syncDOMToZip(s);
+    });
+    log("Global text replacement finished.");
+}
+
+// --- EXTRA ---
+async function extractNotes() {
+    let out = []; // Use an array for cleaner joining
+    const notes = Object.keys(app.zip.files)
+        .filter(f => f.includes("notesSlide"))
+        .sort((a, b) => a.localeCompare(b, undefined, {numeric: true})); // Proper numeric sort
+
+    for (let f of notes) {
+        const xml = await app.zip.file(f).async("string");
+        const doc = new DOMParser().parseFromString(xml, "application/xml");
+        
+        const txt = [...doc.getElementsByTagName("a:t")]
+            .filter(t => t.parentNode.tagName !== "a:fld") // Skip slide numbers
+            .map(t => t.textContent)
+            .join("")
+            .trim(); // Remove leading/trailing whitespace
+
+        // Only add to output if the slide actually has note text
+        if (txt.length > 0) {
+            out.push(txt);
+        }
+    }
+    
+    document.getElementById("notesArea").value = out.join("\n"); 
+}
+
+async function downloadFinal() {
+    if (!app.zip) return;
+    const blob = await app.zip.generateAsync({ type: "blob" });
+    const now = new Date();
+    const iso = now.toISOString().replace(/:/g, "-").split(".")[0];
+    const finalName = `${"presentation"}_${iso}.pptx`;
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = finalName;
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+function switchTab(t) {
+    document.querySelectorAll('.box').forEach(b => { if(b.id.includes("Tool")) b.style.display="none"; });
+    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove("active"));
+    document.getElementById(t + "Tool").style.display = "block";
+    document.getElementById("tab" + t.charAt(0).toUpperCase() + t.slice(1)).classList.add("active");
+}
+  document.getElementById('pasteImgBtn').addEventListener('click', async () => {
+    try {
+        const clipboardItems = await navigator.clipboard.read();
+        for (const clipboardItem of clipboardItems) {
+            for (const type of clipboardItem.types) {
+                if (type.startsWith('image/')) {
+                    const blob = await clipboardItem.getType(type);
+                    processImageReplace('clipboard', blob);
+                    return;
+                }
+            }
+        }
+        alert("No image found on clipboard.");
+    } catch (err) {
+        console.error('Failed to read clipboard contents: ', err);
+        alert("Failed to read clipboard. Make sure you've granted permission.");
+    }
+});
+
+async function processImageReplace(source, data) {
+    let fileBuffer;
+    if (source === 'file') {
+        const fileInput = document.getElementById("newImgInput");
+        if (!fileInput.files.length) return;
+        fileBuffer = await fileInput.files[0].arrayBuffer();
+    } else if (source === 'clipboard') {
+        if (!data) return;
+        fileBuffer = await data.arrayBuffer();
+    }
+
+    if (!app.selectedImagePath || !fileBuffer) return;
+
+    app.zip.file(app.selectedImagePath, fileBuffer);
+    log("Swapped: " + app.selectedImagePath);
+    loadImagesToGallery();
+    document.getElementById("imageReplaceActions").style.display = "none";
+}
+
+document.getElementById("copyselect").addEventListener("click", function(){
+    const textSelect = document.getElementById('textSelect');
+    const selectedIndex = textSelect.selectedIndex;
+    if(textSelect.length > 0){
+        document.getElementById('newText').value = textSelect.options[selectedIndex].text;
+    }
+});
+
+document.querySelector("#randomizedate").addEventListener("click", function(){
+    const el = document.querySelector("#newText");
+    const dateStr = el.value || el.textContent;
+    if(!dateStr || !dateStr.includes("-")) return;
+
+    let [day, month, year] = dateStr.split("-");
+    day = String(Math.floor(Math.random() * 28) + 1).padStart(2, "0");
+    month = String(Math.floor(Math.random() * 12) + 1).padStart(2, "0");
+    const newDate = `${day}-${month}-${year}`;
+
+    if (el.value !== undefined) {
+        el.value = newDate;
+    } else {
+        el.textContent = newDate;
+    }
+});
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", async () => {
+        try {
+            const reg = await navigator.serviceWorker.register("/service-worker.js");
+            console.log("SW Registered", reg);
+        } catch (err) {
+            console.error(err);
+        }
+    });
+}
+  // Launch Queue Consumer to catch 'Open with...' OS events
+if ('launchQueue' in window) {
+  launchQueue.setConsumer(async (launchParams) => {
+    if (!launchParams.files.length) return;
+
+
+    const fileInput = document.getElementById('upload');
+    const dataTransfer = new DataTransfer();
+
+    for (const fileHandle of launchParams.files) {
+      const file = await fileHandle.getFile();
+      console.log(`Opened file: ${file.name}, Size: ${file.size} bytes`);
+      
+      // Add each file to the DataTransfer object
+      dataTransfer.items.add(file);
+    }
+
+    // Assign the collected files to the file input element
+    fileInput.files = dataTransfer.files;
+
+    // Optional: Trigger a 'change' event if other parts of your app listen for file selection
+    fileInput.dispatchEvent(new Event('change'));
+  });
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  if (urlParams.has('share') && 'serviceWorker' in navigator) {
+    const registration = await navigator.serviceWorker.ready;
+    
+    // Set up a MessageChannel to request the files from the Service Worker
+    const messageChannel = new MessageChannel();
+    
+    messageChannel.port1.onmessage = (event) => {
+      const sharedFiles = event.data.files;
+      
+      if (sharedFiles && sharedFiles.length > 0) {
+        const fileInput = document.getElementById('upload');
+        const dataTransfer = new DataTransfer();
+
+        sharedFiles.forEach(fileData => {
+          // Reconstruct raw ArrayBuffer back into a standard File object
+          const reconstructedFile = new File([fileData.buffer], fileData.name, {
+            type: fileData.type
+          });
+          
+          console.log(`Loaded shared file from IndexedDB: ${reconstructedFile.name}, Size: ${reconstructedFile.size} bytes`);
+          
+          // Add file to DataTransfer object
+          dataTransfer.items.add(reconstructedFile);
+        });
+
+        if (fileInput) {
+          // Assign collected files to the file input element
+          fileInput.files = dataTransfer.files;
+          
+          // Trigger change event so your app's listeners pick up the files
+          fileInput.dispatchEvent(new Event('change'));
+        }
+      }
+    };
+
+    // Ask the active Service Worker for the shared files
+    if (registration.active) {
+      registration.active.postMessage({ action: 'GET_SHARED_FILES' }, [messageChannel.port2]);
+    }
+    
+    // Clean up the URL bar so refreshing doesn't trigger share handling again
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+});
+</script>
+  <script>
+const EMU_TO_PX = 96 / 914400;
+const PX_TO_EMU = 914400 / 96;
+const blobUrls = new Set();
+
+let currentZip = null;
+let currentFileName = "presentation.pptx";
+const slideXmlDocs = {}; 
+let selectedTarget = null;
+
+// Namespace-agnostic element selection helpers
+function findElements(parent, localName) {
+    if (!parent) return [];
+    return Array.from(parent.getElementsByTagName("*")).filter(el => {
+        const name = el.localName || el.nodeName.split(':').pop();
+        return name === localName;
+    });
+}
+
+function findFirstElement(parent, localName) {
+    if (!parent) return null;
+    return Array.from(parent.getElementsByTagName("*")).find(el => {
+        const name = el.localName || el.nodeName.split(':').pop();
+        return name === localName;
+    }) || null;
+}
+
+function getAttr(el, attrName) {
+    if (!el) return null;
+    return el.getAttribute(attrName) || 
+           el.getAttribute(`r:${attrName}`) || 
+           el.getAttribute(`a:${attrName}`) || 
+           el.getAttribute(`p:${attrName}`) ||
+           Array.from(el.attributes).find(a => a.localName === attrName)?.value;
+}
+
+const emuToPx = (val) => parseInt(val || 0) * EMU_TO_PX;
+const pxToEmu = (val) => Math.round(parseFloat(val || 0) * PX_TO_EMU);
+
+function getOrCreateDefs(svg) {
+    let defs = svg.querySelector("defs");
+    if (!defs) {
+        defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+        svg.insertBefore(defs, svg.firstChild);
+    }
+    return defs;
+}
+
+// Drag & Drop File Handlers
+const dropZone = document.getElementById("controls");
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+});
+['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+});
+['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+});
+dropZone.addEventListener('drop', (e) => {
+    const files = e.dataTransfer.files;
+    if (files.length && files[0].name.endsWith('.pptx')) handleFile(files[0]);
+});
+
+document.getElementById("fileInputsvg").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) handleFile(file);
+});
+document.getElementById("saveBtn").addEventListener("click", saveAndDownloadPPTX);
+document.getElementById("printBtn").addEventListener("click", function(){
+    window.print();
+});
+
+// Keyboard controls (desktop fallback)
+document.addEventListener("keydown", (e) => {
+    if (!selectedTarget || e.target.tagName === "INPUT") return;
+    
+    const step = e.shiftKey ? 10 : 1;
+    const parent = selectedTarget._parentTextEl;
+    let x = parseInt(parent.getAttribute("x") || 0);
+    let y = parseInt(parent.getAttribute("y") || 0);
+
+    if (e.key === "ArrowLeft") x -= step;
+    else if (e.key === "ArrowRight") x += step;
+    else if (e.key === "ArrowUp") y -= step;
+    else if (e.key === "ArrowDown") y += step;
+    else if (e.key === "Escape") { closeInspector(); return; }
+    else return;
+
+    e.preventDefault();
+    updateTargetPosition(parent, x, y);
+});
+
+function updateTargetPosition(parent, x, y) {
+    parent.setAttribute("x", x);
+    Array.from(parent.children).forEach(c => c.setAttribute("x", x));
+    parent.setAttribute("y", y);
+
+    if (parent._xmlOffRef) {
+        parent._xmlOffRef.setAttribute("x", pxToEmu(x));
+        parent._xmlOffRef.setAttribute("y", pxToEmu(y - (parent._initialVerticalOffset || 0) - 14));
+    }
+
+    document.getElementById("prop-posX").value = Math.round(x);
+    document.getElementById("prop-posY").value = Math.round(y);
+}
+
+async function handleFile(file) {
+    const status = document.getElementById("status");
+    const output = document.getElementById("fileoutput");
+    const saveBtn = document.getElementById("saveBtn");
+    
+    status.innerText = "Reading File...";
+    output.innerHTML = "";
+    saveBtn.style.display = "none";
+    closeInspector();
+    
+    blobUrls.forEach(url => URL.revokeObjectURL(url));
+    blobUrls.clear();
+    Object.keys(slideXmlDocs).forEach(k => delete slideXmlDocs[k]);
+
+    currentFileName = file.name;
+
+    try {
+        const isSvg = file.type === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg");
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+        if (isSvg) {
+            // --- EXISTING SVG HANDLING ---
+            const svgText = await file.text();
+            const parser = new DOMParser();
+            let xmlDoc = parser.parseFromString(svgText, "image/svg+xml");
+            
+            const hasError = xmlDoc.getElementsByTagName("parsererror").length > 0 ||
+                             xmlDoc.querySelector("parsererror") != null;
+
+            if (hasError) {
+                const htmlDoc = parser.parseFromString(svgText, "text/html");
+                const foundSvg = htmlDoc.querySelector("svg");
+                if (foundSvg) {
+                    xmlDoc = htmlDoc;
+                } else {
+                    throw new Error("Invalid SVG file structure.");
+                }
+            }
+
+            slideXmlDocs[file.name] = xmlDoc;
+
+            const container = document.createElement("div");
+            container.className = "slide-container";
+
+            const rawSvgElement = xmlDoc.querySelector("svg") || xmlDoc.documentElement;
+            const svgElement = document.importNode(rawSvgElement, true);
+            
+            svgElement.addEventListener("click", (e) => {
+                if (e.target.tagName.toLowerCase() === "svg") closeInspector();
+            });
+
+            const textElements = svgElement.querySelectorAll("text, tspan");
+            textElements.forEach((el) => {
+                el.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const clickedTarget = e.target;
+                    clickedTarget._parentTextEl = clickedTarget.closest("text") || clickedTarget;
+                    selectElementForInspection(clickedTarget);
+                });
+            });
+
+            container.appendChild(svgElement);
+            output.appendChild(container);
+
+            status.innerText = `Loaded SVG: ${file.name}`;
+            saveBtn.style.display = "inline-flex";
+
+        } else if (isPdf) {
+    // --- NEW PDF HANDLING WITH CMAP & TEXTCONTENT SUPPORT ---
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // Pass cMap parameters to getDocument to decode custom glyphs correctly
+    const pdf = await pdfjsLib.getDocument({ 
+        data: arrayBuffer,
+        cMapUrl: "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/",
+        cMapPacked: true
+    }).promise;
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+        status.innerText = `Processing page ${i} of ${pdf.numPages}...`;
+        await new Promise(resolve => requestAnimationFrame(resolve));
+
+        try {
+            const page = await pdf.getPage(i);
+            const viewport = page.getViewport({ scale: 1.0 });
+
+            const container = document.createElement("div");
+            container.className = "slide-container";
+
+            // 1. Retrieve both vector objects and decoded text content
+            const [opList, textContent] = await Promise.all([
+                page.getOperatorList(),
+                page.getTextContent({ combineTextItems: true }) // Combines fragmented glyph items
+            ]);
+
+            const svgGfx = new pdfjsLib.SVGGraphics(page.commonObjs, page.objs);
+
+            // SAFEGUARD: Wrap image methods to skip faulty images
+            // --- 1. SAFEGUARD: Wrap image methods to skip faulty images ---
+const imageMethods = ['paintImageXObject', 'paintInlineImageXObject', 'paintImageMaskXObject'];
+imageMethods.forEach((method) => {
+    if (typeof svgGfx[method] === 'function') {
+        const originalMethod = svgGfx[method].bind(svgGfx);
+        
+        svgGfx[method] = function (...args) {
+            try {
+                const result = originalMethod(...args);
+                // If it returns a Promise, catch async rejections
+                if (result && typeof result.catch === 'function') {
+                    return result.catch((imgError) => {
+                        console.warn(`Skipped faulty image in page ${i} (${method} async):`, imgError);
+                    });
+                }
+                return result;
+            } catch (imgError) {
+                // Catch synchronous errors (like reading properties of null 'subarray')
+                console.warn(`Skipped faulty image in page ${i} (${method} sync):`, imgError);
+            }
+        };
+    }
+});
+
+            // Render SVG layout using SVGGraphics
+            const svgElement = await svgGfx.getSVG(opList, viewport);
+
+            svgElement.setAttribute("viewBox", `0 0 ${viewport.width} ${viewport.height}`);
+            svgElement.style.touchAction = "none";
+
+            // Deselect on root SVG click
+            svgElement.addEventListener("click", (e) => {
+                if (e.target.tagName.toLowerCase() === "svg") closeInspector();
+            });
+
+            // 2. Map and replace text nodes with clean text from getTextContent()
+            const textNodes = Array.from(svgElement.querySelectorAll("text"));
+
+            // Filter valid text items from getTextContent
+            const textItems = textContent.items.filter(item => item.str && item.str.trim().length > 0);
+
+            textNodes.forEach((node, index) => {
+                const item = textItems[index];
+
+                if (item) {
+                    // Replace Private Use Area (PUA) glyphs (e.g., \uE000 - \uF8FF) or unmapped symbols
+                    const cleanStr = item.str.replace(/[\uE000-\uF8FF]/g, '');
+
+                    // Attach extracted metadata directly to the element for inspection
+                    node.dataset.rawText = item.str;
+                    node.dataset.cleanText = cleanStr;
+                    node.dataset.fontName = item.fontName;
+                    
+                    // If the SVG node rendered PUA symbols, update text content to readable Unicode
+                    if (/[\uE000-\uF8FF]/.test(node.textContent) && cleanStr) {
+                        node.textContent = cleanStr;
+                    }
+                }
+
+                // Add click listener for inspection
+                node.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const clickedTarget = e.target;
+                    clickedTarget._parentTextEl = clickedTarget.closest("text") || clickedTarget;
+                    
+                    // Store the resolved string from textContent if needed
+                    if (item) {
+                        clickedTarget._textContentMeta = item;
+                    }
+                    
+                    selectElementForInspection(clickedTarget);
+                });
+            });
+
+            container.appendChild(svgElement);
+            output.appendChild(container);
+
+        } catch (pageError) {
+            console.error(`Error processing page ${i}:`, pageError);
+        }
+    }
+
+    status.innerText = `Loaded ${pdf.numPages} PDF page(s) successfully.`;
+    saveBtn.style.display = "inline-flex";
+} else {
+            // --- EXISTING PPTX HANDLING ---
+            currentZip = await JSZip.loadAsync(file);
+            
+            const presXml = await currentZip.file("ppt/presentation.xml").async("text");
+            const presDoc = new DOMParser().parseFromString(presXml, "text/xml");
+            const sldSz = findFirstElement(presDoc, "sldSz");
+            const sw = emuToPx(getAttr(sldSz, 'cx')) || 960;
+            const sh = emuToPx(getAttr(sldSz, 'cy')) || 720;
+
+            const slideFiles = Object.keys(currentZip.files)
+                .filter(f => f.startsWith("ppt/slides/slide") && f.endsWith(".xml"))
+                .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+            for (let path of slideFiles) {
+                status.innerText = `Processing ${path.split('/').pop()}...`;
+                await new Promise(resolve => requestAnimationFrame(resolve));
+
+                const container = document.createElement("div");
+                container.className = "slide-container";
+                
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.setAttribute("viewBox", `0 0 ${sw} ${sh}`);
+                svg.style.touchAction = "none";
+
+                const relsPath = path.replace("slides/", "slides/_rels/") + ".rels";
+                const rels = {};
+                if (currentZip.file(relsPath)) {
+                    const relXml = await currentZip.file(relsPath).async("text");
+                    const relDoc = new DOMParser().parseFromString(relXml, "text/xml");
+                    Array.from(relDoc.getElementsByTagName("Relationship")).forEach(r => {
+                        rels[getAttr(r, 'Id')] = getAttr(r, 'Target');
+                    });
+                }
+
+                const slideXml = await currentZip.file(path).async("text");
+                slideXmlDocs[path] = new DOMParser().parseFromString(slideXml, "text/xml");
+
+                const spTree = findFirstElement(slideXmlDocs[path], "spTree");
+                if (spTree) {
+                    await processNodesRecursive(Array.from(spTree.children), svg, currentZip, rels);
+                }
+
+                svg.addEventListener("click", (e) => {
+                    if (e.target.tagName.toLowerCase() === "svg") closeInspector();
+                });
+
+                container.appendChild(svg);
+                output.appendChild(container);
+            }
+
+            status.innerText = `Loaded ${slideFiles.length} slide(s) successfully.`;
+            saveBtn.style.display = "inline-flex";
+        }
+    } catch (err) {
+        console.error(err);
+        status.innerText = "Error parsing file. Ensure it is a valid PPTX, PDF, or SVG document.";
+    }
+}
+
+async function processNodesRecursive(nodes, container, zip, rels) {
+    for (let node of nodes) {
+        const localName = node.localName || node.nodeName.split(':').pop();
+        if (localName === "sp") {
+            renderShapeAndText(node, container);
+        } else if (localName === "pic") {
+            await renderCroppedImage(node, container, zip, rels);
+        } else if (localName === "graphicFrame") {
+            const tbl = findFirstElement(node, "tbl");
+            if (tbl) renderTable(node, tbl, container);
+        } else if (localName === "grpSp") {
+            const childNodes = Array.from(node.children).filter(c => {
+                const n = c.localName || c.nodeName.split(':').pop();
+                return ["sp", "pic", "graphicFrame", "grpSp"].includes(n) || c.children.length > 0;
+            });
+            await processNodesRecursive(childNodes, container, zip, rels);
+        }
+    }
+}
+
+function parseFillAndStroke(spPr, svg, targetEl) {
+    if (!spPr) return;
+
+    let hasAppliedFill = false;
+
+    // 1. Check for Gradient Fill first (highest priority)
+    const gradFill = findFirstElement(spPr, "gradFill");
+    if (gradFill) {
+        const gsLst = findFirstElement(gradFill, "gsLst");
+        if (gsLst) {
+            const stops = findElements(gsLst, "gs");
+            const gradId = "grad-" + Math.random().toString(36).substr(2, 9);
+            const linearGrad = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+            linearGrad.setAttribute("id", gradId);
+
+            stops.forEach(gs => {
+                const pos = (parseInt(getAttr(gs, 'pos') || 0) / 1000) + "%";
+                const clr = findFirstElement(gs, "srgbClr");
+                const stop = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+                stop.setAttribute("offset", pos);
+                stop.setAttribute("stop-color", clr ? "#" + getAttr(clr, 'val') : "#000");
+                linearGrad.appendChild(stop);
+            });
+
+            getOrCreateDefs(svg).appendChild(linearGrad);
+            targetEl.setAttribute("fill", `url(#${gradId})`);
+            hasAppliedFill = true;
+        }
+    }
+
+    // 2. If no gradient, check for a Solid Fill
+    if (!hasAppliedFill) {
+        const solidFill = findFirstElement(spPr, "solidFill");
+        if (solidFill) {
+            const srgbClr = findFirstElement(solidFill, "srgbClr");
+            if (srgbClr) {
+                targetEl.setAttribute("fill", "#" + getAttr(srgbClr, 'val'));
+                hasAppliedFill = true;
+            }
+        }
+    }
+
+    // 3. Fallback to default white if neither gradient nor solid fill exists
+    if (!hasAppliedFill) {
+        targetEl.setAttribute("fill", "#FFFFFF");
+    }
+
+    // 4. Parse Stroke / Line properties
+    const ln = findFirstElement(spPr, "ln");
+    if (ln) {
+        const strokeWidth = emuToPx(getAttr(ln, 'w')) || 1;
+        const lnFill = findFirstElement(ln, "solidFill");
+        const srgbClr = lnFill ? findFirstElement(lnFill, "srgbClr") : null;
+        targetEl.setAttribute("stroke", srgbClr ? "#" + getAttr(srgbClr, 'val') : "none");
+        targetEl.setAttribute("stroke-width", strokeWidth);
+    }
+}
+
+function renderShapeAndText(sp, svg) {
+    const spPr = findFirstElement(sp, "spPr");
+    const xfrm = findFirstElement(spPr, "xfrm");
+    const off = findFirstElement(xfrm, "off");
+    const ext = findFirstElement(xfrm, "ext");
+
+    if (!off) return;
+
+    const x = emuToPx(getAttr(off, 'x') || 0);
+    const y = emuToPx(getAttr(off, 'y') || 0);
+    const w = ext ? emuToPx(getAttr(ext, 'cx') || 0) : 0;
+    const h = ext ? emuToPx(getAttr(ext, 'cy') || 0) : 0;
+
+    // Calculate rotation around shape center
+    const rotAttr = getAttr(xfrm, 'rot');
+    let transformStr = "";
+    if (rotAttr) {
+        const degrees = parseInt(rotAttr, 10) / 60000;
+        transformStr = `rotate(${degrees}, ${x + w / 2}, ${y + h / 2})`;
+    }
+
+    const prstGeom = findFirstElement(spPr, "prstGeom");
+    const custGeom = findFirstElement(spPr, "custGeom");
+
+    // Use a grouping element (<g>) if rotation is present to keep geometry & styling clean
+    let targetContainer = svg;
+    let groupEl = null;
+
+    if (transformStr) {
+        groupEl = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        groupEl.setAttribute("transform", transformStr);
+        targetContainer = groupEl;
+    }
+
+    if (w > 0 && h > 0) {
+        if (custGeom) {
+            renderCustomGeometry(custGeom, spPr, targetContainer, x, y);
+        } else if (prstGeom) {
+            renderPresetGeometry(prstGeom, spPr, targetContainer, x, y, w, h);
+        }
+    }
+
+    if (groupEl) {
+        svg.appendChild(groupEl);
+    }
+
+    // Pass base layout coordinates to text renderer
+    renderFormattedText(sp, svg, x, y, transformStr);
+}
+
+/**
+ * Handles complex custom geometry (custGeom) paths including curves and arcs.
+ */
+function renderCustomGeometry(custGeom, spPr, container, x, y) {
+    const pathLst = findFirstElement(custGeom, "pathLst");
+    if (!pathLst) return;
+
+    const paths = findElements(pathLst, "path");
+    paths.forEach(p => {
+        let pathData = "";
+        Array.from(p.children).forEach(cmd => {
+            const localName = cmd.localName || cmd.nodeName.split(':').pop();
+            const pt = findFirstElement(cmd, "pt");
+
+            switch (localName) {
+                case "moveTo":
+                    if (pt) pathData += `M ${emuToPx(getAttr(pt, 'x'))} ${emuToPx(getAttr(pt, 'y'))} `;
+                    break;
+                case "lnTo":
+                    if (pt) pathData += `L ${emuToPx(getAttr(pt, 'x'))} ${emuToPx(getAttr(pt, 'y'))} `;
+                    break;
+                case "cubicBezTo": {
+                    const pts = findElements(cmd, "pt");
+                    if (pts.length >= 3) {
+                        pathData += `C ${emuToPx(getAttr(pts[0], 'x'))} ${emuToPx(getAttr(pts[0], 'y'))}, ` +
+                                    `${emuToPx(getAttr(pts[1], 'x'))} ${emuToPx(getAttr(pts[1], 'y'))}, ` +
+                                    `${emuToPx(getAttr(pts[2], 'x'))} ${emuToPx(getAttr(pts[2], 'y'))} `;
+                    }
+                    break;
+                }
+                case "close":
+                    pathData += "Z ";
+                    break;
+            }
+        });
+
+        if (pathData) {
+            const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            pathEl.setAttribute("d", pathData);
+            pathEl.setAttribute("transform", `translate(${x}, ${y})`);
+            parseFillAndStroke(spPr, container, pathEl);
+            container.appendChild(pathEl);
+        }
+    });
+}
+
+/**
+ * Handles standard preset shapes (rect, ellipse, roundRect, etc.).
+ */
+function renderPresetGeometry(prstGeom, spPr, container, x, y, w, h) {
+    const prstVal = getAttr(prstGeom, 'prst');
+    let shapeEl;
+
+    if (prstVal === "ellipse") {
+        shapeEl = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+        shapeEl.setAttribute("cx", x + w / 2);
+        shapeEl.setAttribute("cy", y + h / 2);
+        shapeEl.setAttribute("rx", w / 2);
+        shapeEl.setAttribute("ry", h / 2);
+    } else if (prstVal === "roundRect") {
+        shapeEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        shapeEl.setAttribute("x", x);
+        shapeEl.setAttribute("y", y);
+        shapeEl.setAttribute("width", w);
+        shapeEl.setAttribute("height", h);
+        shapeEl.setAttribute("rx", Math.min(w, h) * 0.1); // Default rounded corner radius
+    } else {
+        // Fallback default rectangle
+        shapeEl = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        shapeEl.setAttribute("x", x);
+        shapeEl.setAttribute("y", y);
+        shapeEl.setAttribute("width", w);
+        shapeEl.setAttribute("height", h);
+    }
+
+    parseFillAndStroke(spPr, container, shapeEl);
+    container.appendChild(shapeEl);
+}
+
+/**
+ * Renders formatted text with automatic word wrapping into an SVG element.
+ */
+function renderFormattedText(sp, svg, x, y, transformStr, maxLineWidth = 300) {
+    const paragraphs = findElements(sp, "p");
+    let currentY = y;
+
+    const handleSpanSelection = (tspan) => (e) => {
+        e.stopPropagation();
+        if (e.type === 'touchend') {
+            e.preventDefault();
+        }
+        selectElementForInspection(tspan);
+    };
+
+    for (const p of paragraphs) {
+        const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        textEl.setAttribute("x", x);
+        textEl.setAttribute("font-family", "system-ui, -apple-system, sans-serif");
+        
+        if (transformStr) {
+            textEl.setAttribute("transform", transformStr);
+        }
+
+        textEl._xmlOffRef = findFirstElement(sp, "off");
+        textEl._initialVerticalOffset = currentY - y; 
+        
+        setupDragAndDrop(textEl, svg);
+
+        const components = Array.from(p.children).filter(c => {
+            const ln = c.localName || c.nodeName.split(':').pop();
+            return ln === "r" || ln === "br";
+        });
+
+        if (components.length === 0) {
+            currentY += 18;
+            continue;
+        }
+
+        let maxHeightInLine = 16;
+        
+        // Create an initial active tspan for the paragraph line
+        let activeTspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+        textEl.appendChild(activeTspan);
+        let currentLineText = "";
+
+        for (const comp of components) {
+            const localName = comp.localName || comp.nodeName.split(':').pop();
+
+            if (localName === "br") {
+                currentY += maxHeightInLine + 4;
+                activeTspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+                activeTspan.setAttribute("x", x);
+                activeTspan.setAttribute("dy", maxHeightInLine + 4);
+                textEl.appendChild(activeTspan);
+                currentLineText = "";
+                continue;
+            }
+
+            const xmlTextNode = findFirstElement(comp, "t");
+            if (!xmlTextNode) continue;
+
+            const rPr = findFirstElement(comp, "rPr");
+            const sz = getAttr(rPr, 'sz');
+            const fontSize = sz ? parseInt(sz, 10) / 100 : 16;
+            
+            if (fontSize > maxHeightInLine) maxHeightInLine = fontSize;
+
+            // Style configuration mapping
+            const isBold = getAttr(rPr, 'b') === "1";
+            const isItalic = getAttr(rPr, 'i') === "1";
+            const srgbClr = findFirstElement(rPr, "srgbClr");
+            const hexColor = srgbClr ? getAttr(srgbClr, 'val') : "000000";
+
+            // Word-by-word wrapping check
+            const words = (xmlTextNode.textContent || "").split(/\s+/);
+
+            for (let i = 0; i < words.length; i++) {
+                const word = words[i] + (i === words.length - 1 ? "" : " ");
+                
+                // Test length by tentatively appending to active tspan
+                activeTspan.textContent = currentLineText + word;
+                activeTspan.setAttribute("font-size", `${fontSize}px`);
+                if (isBold) activeTspan.setAttribute("font-weight", "bold");
+                if (isItalic) activeTspan.setAttribute("font-style", "italic");
+                activeTspan.setAttribute("fill", `#${hexColor}`);
+
+                // If it overflows the max width boundary, wrap to a new line (tspan)
+                if (activeTspan.getComputedTextLength() > maxLineWidth && currentLineText.length > 0) {
+                    // Revert active span to previous safe line state
+                    activeTspan.textContent = currentLineText;
+
+                    // Create new line tspan
+                    activeTspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+                    activeTspan.setAttribute("x", x);
+                    activeTspan.setAttribute("dy", maxHeightInLine);
+                    
+                    // Apply styles to new line span
+                    activeTspan.setAttribute("font-size", `${fontSize}px`);
+                    if (isBold) activeTspan.setAttribute("font-weight", "bold");
+                    if (isItalic) activeTspan.setAttribute("font-style", "italic");
+                    activeTspan.setAttribute("fill", `#${hexColor}`);
+
+                    currentLineText = word;
+                    activeTspan.textContent = currentLineText;
+                    textEl.appendChild(activeTspan);
+
+                    currentY += maxHeightInLine;
+                } else {
+                    currentLineText += word;
+                }
+
+                // Bind inspection events onto active span chunks
+                if (!activeTspan._boundHandler) {
+                    activeTspan._xmlTextNode = xmlTextNode;
+                    activeTspan._xmlRPrNode = rPr;
+                    activeTspan._parentTextEl = textEl;
+                    
+                    const boundHandler = handleSpanSelection(activeTspan);
+                    activeTspan.addEventListener("click", boundHandler);
+                    activeTspan.addEventListener("touchend", boundHandler);
+                    activeTspan._boundHandler = true;
+                }
+            }
+        }
+
+        currentY += maxHeightInLine;
+        textEl.setAttribute("y", currentY);
+        svg.appendChild(textEl);
+        currentY += 6; 
+    }
+}
+
+async function renderCroppedImage(pic, svg, zip, rels) {
+    const blip = findFirstElement(pic, "blip");
+    if (!blip) return;
+
+    // 1. Look for SVG blip extension first, fallback to standard embed ID
+    const svgBlip = findFirstElement(blip, "svgBlip");
+    const embedId = svgBlip 
+        ? (getAttr(svgBlip, 'embed') || getAttr(svgBlip, 'r:embed'))
+        : (getAttr(blip, 'embed') || getAttr(blip, 'r:embed'));
+
+    const target = rels[embedId];
+    if (!target) return;
+
+    // 2. Safely clean relative path (handles ../media/... -> ppt/media/...)
+    const cleanPath = target.startsWith("ppt/") 
+        ? target 
+        : target.replace(/^(\.\.\/)+/, "ppt/");
+
+    const imgFile = zip.file(cleanPath);
+    if (!imgFile) return;
+
+    // Parse transform dimensions
+    const xfrm = findFirstElement(pic, "xfrm") || findFirstElement(findFirstElement(pic, "spPr"), "xfrm");
+    if (!xfrm) return;
+
+    const off = findFirstElement(xfrm, "off");
+    const ext = findFirstElement(xfrm, "ext");
+    if (!off || !ext) return;
+
+    const displayW = emuToPx(getAttr(ext, 'cx'));
+    const displayH = emuToPx(getAttr(ext, 'cy'));
+    const posX = emuToPx(getAttr(off, 'x'));
+    const posY = emuToPx(getAttr(off, 'y'));
+
+    // Parse crop percentages (OpenXML uses percentages scaled by 100,000)
+    const srcRect = findFirstElement(blip, "srcRect");
+    const cropL = srcRect ? (parseInt(getAttr(srcRect, 'l') || 0) / 100000) : 0;
+    const cropR = srcRect ? (parseInt(getAttr(srcRect, 'r') || 0) / 100000) : 0;
+    const cropT = srcRect ? (parseInt(getAttr(srcRect, 't') || 0) / 100000) : 0;
+    const cropB = srcRect ? (parseInt(getAttr(srcRect, 'b') || 0) / 100000) : 0;
+
+    const isSvg = cleanPath.toLowerCase().endsWith('.svg');
+
+    if (isSvg) {
+        const svgContent = await imgFile.async("text");
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgContent, "image/svg+xml");
+        const innerSvg = doc.querySelector("svg");
+
+        if (!innerSvg) return;
+
+        // Group wrapper positioned on the main canvas
+        const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.setAttribute("transform", `translate(${posX}, ${posY})`);
+
+        // Apply crop clipping if crop attributes exist
+        if (cropL > 0 || cropR > 0 || cropT > 0 || cropB > 0) {
+            const clipInset = `${cropT * 100}% ${cropR * 100}% ${cropB * 100}% ${cropL * 100}%`;
+            g.style.clipPath = `inset(${clipInset})`;
+        }
+
+        // Set dimensions on imported SVG
+        innerSvg.setAttribute("width", displayW);
+        innerSvg.setAttribute("height", displayH);
+        
+        // Ensure standard viewBox handling
+        if (!innerSvg.getAttribute("viewBox") && innerSvg.getAttribute("width") && innerSvg.getAttribute("height")) {
+            const rawW = parseFloat(innerSvg.getAttribute("width"));
+            const rawH = parseFloat(innerSvg.getAttribute("height"));
+            innerSvg.setAttribute("viewBox", `0 0 ${rawW} ${rawH}`);
+        }
+
+        g.appendChild(document.importNode(innerSvg, true));
+        svg.appendChild(g);
+
+    } else {
+        // Standard raster image logic (PNG, JPEG, etc.)
+        const blob = await imgFile.async("blob");
+        const url = URL.createObjectURL(blob);
+        if (typeof blobUrls !== 'undefined' && blobUrls.add) {
+            blobUrls.add(url);
+        }
+
+        const viewport = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        viewport.setAttribute("x", posX); 
+        viewport.setAttribute("y", posY);
+        viewport.setAttribute("width", displayW); 
+        viewport.setAttribute("height", displayH);
+        viewport.setAttribute("viewBox", "0 0 1 1");
+        viewport.setAttribute("preserveAspectRatio", "none");
+        viewport.setAttribute("overflow", "hidden");
+
+        const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        img.setAttributeNS("http://www.w3.org/1999/xlink", "href", url);
+        img.setAttribute("href", url);
+
+        const scaleX = 1 / (1 - cropL - cropR);
+        const scaleY = 1 / (1 - cropT - cropB);
+
+        img.setAttribute("width", scaleX); 
+        img.setAttribute("height", scaleY);
+        img.setAttribute("x", -cropL * scaleX); 
+        img.setAttribute("y", -cropT * scaleY);
+        img.setAttribute("preserveAspectRatio", "none");
+
+        viewport.appendChild(img);
+        svg.appendChild(viewport);
+    }
+}
+
+function renderTable(graphicFrame, tbl, svg) {
+    const xfrm = findFirstElement(graphicFrame, "xfrm");
+    const off = findFirstElement(xfrm, "off");
+    if (!off) return;
+
+    const startX = emuToPx(getAttr(off, 'x'));
+    const startY = emuToPx(getAttr(off, 'y'));
+
+    const tblGrid = findFirstElement(tbl, "tblGrid");
+    const gridCols = tblGrid ? findElements(tblGrid, "gridCol") : [];
+    const colWidths = gridCols.map(col => emuToPx(getAttr(col, 'w')));
+
+    const rows = findElements(tbl, "tr");
+    let currentY = startY;
+
+    rows.forEach(tr => {
+        const rowHeight = emuToPx(getAttr(tr, 'h')) || 30;
+        const cells = findElements(tr, "tc");
+        let currentX = startX;
+
+        cells.forEach((tc, colIdx) => {
+            const colWidth = colWidths[colIdx] || 100;
+
+            const tcPr = findFirstElement(tc, "tcPr");
+            const solidFill = findFirstElement(tcPr, "solidFill");
+            const noFill = findFirstElement(tcPr, "noFill");
+            
+            const cellRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+            cellRect.setAttribute("x", currentX);
+            cellRect.setAttribute("y", currentY);
+            cellRect.setAttribute("width", colWidth);
+            cellRect.setAttribute("height", rowHeight);
+            
+            if (solidFill && !noFill) {
+                const srgbClr = findFirstElement(solidFill, "srgbClr");
+                cellRect.setAttribute("fill", srgbClr ? "#" + getAttr(srgbClr, 'val') : "none");
+            } else {
+                cellRect.setAttribute("fill", "none");
+            }
+            
+            cellRect.setAttribute("stroke", "#cbd5e1");
+            cellRect.setAttribute("stroke-width", "1");
+            svg.appendChild(cellRect);
+
+            const txBody = findFirstElement(tc, "txBody");
+            if (txBody) {
+                const paragraphs = findElements(txBody, "p");
+                let textY = currentY + 18;
+
+                paragraphs.forEach(p => {
+                    const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    textEl.setAttribute("x", currentX + 8);
+                    textEl.setAttribute("y", textY);
+                    textEl.setAttribute("font-family", "system-ui, -apple-system, sans-serif");
+
+                    const runs = findElements(p, "r");
+                    runs.forEach(r => {
+                        const xmlTextNode = findFirstElement(r, "t");
+                        if (!xmlTextNode) return;
+
+                        const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
+                        const rPr = findFirstElement(r, "rPr");
+                        
+                        const sz = getAttr(rPr, 'sz');
+                        const fontSize = sz ? (parseInt(sz) / 100) : 12;
+                        tspan.setAttribute("font-size", fontSize + "px");
+
+                        if (getAttr(rPr, 'b') === "1") tspan.setAttribute("font-weight", "bold");
+                        if (getAttr(rPr, 'i') === "1") tspan.setAttribute("font-style", "italic");
+
+                        const srgbClr = findFirstElement(rPr, "srgbClr");
+                        const hexColor = srgbClr ? getAttr(srgbClr, 'val') : "1e293b";
+                        tspan.setAttribute("fill", "#" + hexColor);
+
+                        tspan.textContent = xmlTextNode.textContent || "";
+                        
+                        tspan._xmlTextNode = xmlTextNode;
+                        tspan._xmlRPrNode = rPr;
+                        tspan._parentTextEl = textEl;
+                        tspan.addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            selectElementForInspection(tspan);
+                        });
+
+                        textEl.appendChild(tspan);
+                    });
+
+                    svg.appendChild(textEl);
+                    textY += 16;
+                });
+            }
+
+            currentX += colWidth;
+        });
+
+        currentY += rowHeight;
+    });
+}
+
+// Unified Drag and Drop Helper for Mouse and Touch
+function setupDragAndDrop(el, svg) {
+    let isDragging = false;
+    let startX, startY, origDx, origDy;
+    let animationFrameId = null;
+
+    const getCoords = (e) => {
+        if (e.touches && e.touches.length > 0) {
+            return { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY };
+        }
+        return { clientX: e.clientX, clientY: e.clientY };
+    };
+
+    const dragStart = (e) => {
+        if (!["tspan", "text"].includes(e.target.tagName)) return;
+        
+        if (e.type === "touchstart") e.preventDefault();
+        
+        isDragging = true;
+        // Read initial dx/dy offsets instead of x/y
+        origDx = parseFloat(el.getAttribute("dx") || 0);
+        origDy = parseFloat(el.getAttribute("dy") || 0);
+        
+        const coords = getCoords(e);
+        const pt = svg.createSVGPoint();
+        pt.x = coords.clientX; 
+        pt.y = coords.clientY;
+        
+        const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+        startX = svgP.x; 
+        startY = svgP.y;
+
+        window.addEventListener("mousemove", dragMove, { passive: false });
+        window.addEventListener("touchmove", dragMove, { passive: false });
+        window.addEventListener("mouseup", dragEnd);
+        window.addEventListener("touchend", dragEnd);
+    };
+
+    const dragMove = (e) => {
+        if (!isDragging) return;
+        if (e.cancelable) e.preventDefault();
+        
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        
+        animationFrameId = requestAnimationFrame(() => {
+            const coords = getCoords(e);
+            const pt = svg.createSVGPoint();
+            pt.x = coords.clientX; 
+            pt.y = coords.clientY;
+            
+            const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+            const nextDx = origDx + (svgP.x - startX);
+            const nextDy = origDy + (svgP.y - startY);
+
+            // Update dx and dy attributes instead of x and y
+            el.setAttribute("dx", nextDx);
+            el.setAttribute("dy", nextDy);
+        });
+    };
+
+    const dragEnd = () => {
+        isDragging = false;
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        
+        window.removeEventListener("mousemove", dragMove);
+        window.removeEventListener("touchmove", dragMove);
+        window.removeEventListener("mouseup", dragEnd);
+        window.removeEventListener("touchend", dragEnd);
+    };
+
+    el.addEventListener("mousedown", dragStart);
+    el.addEventListener("touchstart", dragStart, { passive: false });
+}
+
+function selectElementForInspection(tspan) {
+    if (selectedTarget) selectedTarget._parentTextEl.classList.remove("selected-element");
+    selectedTarget = tspan;
+    selectedTarget._parentTextEl.classList.add("selected-element");
+
+    document.getElementById("no-selection-notice").style.display = "none";
+    document.getElementById("editor-fields").style.display = "block";
+
+    document.getElementById("prop-text").value = tspan.textContent;
+    document.getElementById("prop-size").value = parseInt(tspan.getAttribute("font-size") || 16);
+    
+    const rawFill = tspan.getAttribute("fill") || "#000000";
+    document.getElementById("prop-color").value = rawFill.startsWith("#") ? rawFill : "#000000";
+    
+    document.getElementById("btn-bold").classList.toggle("active", tspan.getAttribute("font-weight") === "bold");
+    document.getElementById("btn-italic").classList.toggle("active", tspan.getAttribute("font-style") === "italic");
+    
+    document.getElementById("prop-posX").value = Math.round(tspan._parentTextEl.getAttribute("x") || 0);
+    document.getElementById("prop-posY").value = Math.round(tspan._parentTextEl.getAttribute("y") || 0);
+}
+
+function closeInspector() {
+    if (selectedTarget) selectedTarget._parentTextEl.classList.remove("selected-element");
+    selectedTarget = null;
+    document.getElementById("no-selection-notice").style.display = "block";
+    document.getElementById("editor-fields").style.display = "none";
+}
+
+document.getElementById("prop-text").addEventListener("input", (e) => {
+    if (!selectedTarget) return;
+    selectedTarget.textContent = e.target.value;
+    if (selectedTarget._xmlTextNode) selectedTarget._xmlTextNode.textContent = e.target.value;
+});
+
+document.getElementById("prop-size").addEventListener("input", (e) => {
+    if (!selectedTarget) return;
+    const pxVal = parseInt(e.target.value) || 12;
+    selectedTarget.setAttribute("font-size", pxVal + "px");
+    if (selectedTarget._xmlRPrNode) {
+        selectedTarget._xmlRPrNode.setAttribute("sz", pxVal * 100);
+    }
+});
+
+document.getElementById("prop-color").addEventListener("input", (e) => {
+    if (!selectedTarget) return;
+    const hex = e.target.value;
+    selectedTarget.setAttribute("fill", hex);
+    
+    if (selectedTarget._xmlRPrNode) {
+        let srgbClr = findFirstElement(selectedTarget._xmlRPrNode, "srgbClr");
+        if (!srgbClr) {
+            srgbClr = selectedTarget._xmlRPrNode.ownerDocument.createElementNS("http://schemas.openxmlformats.org/drawingml/2006/main", "a:srgbClr");
+            selectedTarget._xmlRPrNode.appendChild(srgbClr);
+        }
+        srgbClr.setAttribute("val", hex.replace("#", "").toUpperCase());
+    }
+});
+
+document.getElementById("btn-bold").addEventListener("click", () => {
+    if (!selectedTarget) return;
+    const isBold = selectedTarget.getAttribute("font-weight") === "bold";
+    selectedTarget.setAttribute("font-weight", isBold ? "normal" : "bold");
+    document.getElementById("btn-bold").classList.toggle("active", !isBold);
+    if (selectedTarget._xmlRPrNode) selectedTarget._xmlRPrNode.setAttribute("b", isBold ? "0" : "1");
+});
+
+document.getElementById("btn-italic").addEventListener("click", () => {
+    if (!selectedTarget) return;
+    const isItalic = selectedTarget.getAttribute("font-style") === "italic";
+    selectedTarget.setAttribute("font-style", isItalic ? "normal" : "italic");
+    document.getElementById("btn-italic").classList.toggle("active", !isItalic);
+    if (selectedTarget._xmlRPrNode) selectedTarget._xmlRPrNode.setAttribute("i", isItalic ? "0" : "1");
+});
+
+[document.getElementById("prop-posX"), document.getElementById("prop-posY")].forEach(input => {
+    input.addEventListener("input", () => {
+        if (!selectedTarget) return;
+        const x = parseInt(document.getElementById("prop-posX").value) || 0;
+        const y = parseInt(document.getElementById("prop-posY").value) || 0;
+        updateTargetPosition(selectedTarget._parentTextEl, x, y);
+    });
+});
+
+async function saveAndDownloadPPTX() {
+    if (!currentZip || Object.keys(slideXmlDocs).length === 0) return;
+    const status = document.getElementById("status");
+    status.innerText = "Reassembling package...";
+
+    try {
+        const serializer = new XMLSerializer();
+        for (const [path, xmlDoc] of Object.entries(slideXmlDocs)) {
+            const updatedXmlString = serializer.serializeToString(xmlDoc);
+            currentZip.file(path, updatedXmlString);
+        }
+
+        status.innerText = "Compressing presentation file...";
+        const contentBlob = await currentZip.generateAsync({
+            type: "blob", 
+            mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+        });
+        
+        const downloadUrl = URL.createObjectURL(contentBlob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = currentFileName.replace(/\.pptx$/i, "") + "_edited.pptx";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+        status.innerText = "Presentation saved successfully!";
+    } catch (err) {
+        console.error(err);
+        status.innerText = "Failed to generate file archive.";
+    }
+}
+
+document.querySelector("#saveSVG").addEventListener("click", () => {
+    // Grab the active SVG element from the output area
+    const svgElement = document.querySelector("svg");
+    if (!svgElement) return;
+
+    // Clean up temporary editing artifacts before saving (e.g. remove contenteditable)
+    svgElement.querySelectorAll("[contenteditable]").forEach(el => {
+        el.removeAttribute("contenteditable");
+    });
+
+    // Serialize the SVG DOM to a string
+    const serializer = new XMLSerializer();
+    let svgString = serializer.serializeToString(svgElement);
+
+    // Ensure proper XML namespaces are present
+    if (!svgString.includes("xmlns=")) {
+        svgString = svgString.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+
+    // Create a Blob and trigger a file download
+    const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    
+    const downloadLink = document.createElement("a");
+    downloadLink.href = url;
+    downloadLink.download = (currentFileName ? currentFileName.replace(/\.[^/.]+$/, "") : "edited") + ".svg";
+    
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    
+    URL.revokeObjectURL(url);
+});
+
+document.getElementById("clipboardBtn").addEventListener("click", async () => {
+    const status = document.getElementById("status");
+
+    try {
+        // 1. Request clipboard text content
+        const text = await navigator.clipboard.readText();
+        const trimmedText = text.trim();
+
+        // 2. Validate basic SVG content presence
+        if (!trimmedText.toLowerCase().includes("<svg") || !trimmedText.toLowerCase().includes("</svg>")) {
+            status.innerText = "Clipboard does not contain valid SVG markup.";
+            return;
+        }
+
+        // 3. Create a synthetic SVG File object
+        const svgFile = new File([trimmedText], "clipboard.svg", {
+            type: "image/svg+xml",
+        });
+
+        // 4. Pass the file directly to your existing handleFile pipeline
+        await handleFile(svgFile);
+
+    } catch (err) {
+        console.error("Failed to read clipboard:", err);
+        
+        // Handle common permission denial errors
+        if (err.name === "NotAllowedError") {
+            status.innerText = "Clipboard permission denied. Please grant permission.";
+        } else {
+            status.innerText = "Unable to read SVG from clipboard.";
+        }
+    }
+});
+         
+
+    function licensedata() {
+    // 1. Get and clean the text from #output
+    let text = document.getElementById("output").innerText.trim();
+
+    // 2. Define regex patterns
+    const cnicPattern = /\b(\d{5}-\d{7}-\d{1}|\d{13})\b/;
+    const dobPattern = /(\d{2})-(\d{2})-(19\d{2}|20\d{2})/;
+
+    // 3. Find matches
+    const cnicMatch = text.match(cnicPattern);
+    const dobMatch = text.match(dobPattern);
+
+    // Validate that both CNIC and DOB exist
+    if (cnicMatch && dobMatch) {
+        let cnicValue = cnicMatch[0];
+
+        // Format 13-digit CNIC if it lacks dashes
+        if (/^\d{13}$/.test(cnicValue)) {
+            cnicValue = cnicValue.slice(0, 5) + '-' + cnicValue.slice(5, 12) + '-' + cnicValue.slice(12);
+        }
+
+        // Reverse DOB from DD-MM-YYYY to YYYY-MM-DD using captured groups
+        let dobValue = dobMatch[0].replace(dobPattern, "$3-$2-$1");
+
+        // 4. Send message to the extension's content script
+        window.postMessage({
+            type: "FETCH_DLIMS_DATA",
+            cnic: cnicValue,
+            dob: dobValue
+        }, "https://atauxel.vercel.app");
+
+    } else {
+        alert("Valid CNIC and Date of Birth (DD-MM-YYYY) not found in the text.");
+    }
+}
+    function irisdata() {
+    // 1. Get and clean the text from #output
+    let text = document.getElementById("output").innerText.trim();
+
+    // 2. Define regex patterns
+    const cnicPattern = /\b(\d{5}-\d{7}-\d{1}|\d{13})\b/;    
+
+    // 3. Find matches
+    const cnicMatch = text.match(cnicPattern);    
+
+    // Validate that both CNIC and DOB exist
+    if (cnicMatch) {
+        let cnicValue = cnicMatch[0];
+
+        // Format 13-digit CNIC if it lacks dashes
+        if (/^\d{13}$/.test(cnicValue)) {
+            cnicValue = cnicValue.slice(0, 5) + '-' + cnicValue.slice(5, 12) + '-' + cnicValue.slice(12);
+        }
+        // 4. Send message to the extension's content script
+        window.postMessage({
+            type: "FETCH_IRIS_DATA",
+            cnic: cnicValue            
+        }, "https://atauxel.vercel.app");
+
+    } else {
+        alert("Valid CNIC and Date of Birth (DD-MM-YYYY) not found in the text.");
+    }
+}
+
+    // Function to trigger the Domicile fetch using #output text
+function triggerDomicileFetch() {
+    const outputElement = document.querySelector("#output");
+    
+    if (!outputElement) {
+        console.warn("Element #output not found.");
+        alert("Element #output not found.");
+        return;
+    }
+
+    const text = outputElement.innerText.trim();
+    const cnicPattern = /\b(\d{5}-\d{7}-\d{1}|\d{13})\b/;
+    const match = text.match(cnicPattern);
+
+    if (!match) {
+        alert("No valid CNIC found in the text.");
+        return;
+    }
+
+    let id = match[0];
+    if (/^\d{13}$/.test(id)) {
+        id = id.slice(0, 5) + '-' + id.slice(5, 12) + '-' + id.slice(12);
+    }
+
+        // Extension is active: communicate via postMessage
+        window.postMessage({
+            type: "FETCH_DOMICILE_DATA",
+            id: id
+        }, window.location.origin);
+}
+
+    function DomicileFetch() {
+    const outputElement = document.querySelector("#output");
+    
+    if (!outputElement) {
+        console.warn("Element #output not found.");
+        alert("Element #output not found.");
+        return;
+    }
+
+    const text = outputElement.innerText.trim();
+    const cnicPattern = /\b(\d{5}-\d{7}-\d{1}|\d{13})\b/;
+    const match = text.match(cnicPattern);
+
+    if (!match) {
+        alert("No valid CNIC found in the text.");
+        return;
+    }
+
+    let id = match[0];
+    if (/^\d{13}$/.test(id)) {
+        id = id.slice(0, 5) + '-' + id.slice(5, 12) + '-' + id.slice(12);
+    }
+  
+        const url = "https://domicile.punjab.gov.pk/AjaxCall.aspx?ID=" + encodeURIComponent(id);
+        window.open(url, "_blank");
+}
+
+
+// Bind it directly to your button
+const fetchBtn = document.getElementById("fetchDomicileBtn");
+if (fetchBtn) {
+    fetchBtn.addEventListener("click", triggerDomicileFetch);
+}
+/*
+    // Inside your PWA script or web app code
+window.addEventListener("message", (event) => {
+  // Ensure message comes from your extension or handle extension communication
+  if (event.data && event.data.action === "DLIMS_DATA_RESPONSE") {
+    const { status, html } = event.data.data;
+    
+    if (status === "success") {
+      // Create a temporary container or parse the scraped HTML wrapper
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      const dWrapper = doc.querySelector(".d_wrapper");
+      if (dWrapper) {
+        console.log("Successfully intercepted .d_wrapper in PWA:", dWrapper);
+        
+        // TODO: Render data into your PWA UI elements here
+        document.getElementById("output").innerHTML = dWrapper.innerHTML;
+      }
+    }
+  }
+});*/
+</script>
+  <script>
+let selectedFiles = [];
+let customPath = "";
+let worker;
+
+// Worker logic to parse PPTX and DOCX XML structures
+const workerCode = `
+    importScripts('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+    self.onmessage = async (e) => {
+        const { fileName, arrayBuffer } = e.data;
+        try {
+            const zip = await JSZip.loadAsync(arrayBuffer);
+            let allFiles = [];
+            
+            if (fileName.toLowerCase().endsWith('.pptx')) {
+                const slideFiles = Object.keys(zip.files).filter(f => f.startsWith("ppt/slides/slide"));
+                const noteFiles = Object.keys(zip.files).filter(f => f.startsWith("ppt/notesSlides/notesSlide"));
+                allFiles = [...slideFiles, ...noteFiles];
+            } else if (fileName.toLowerCase().endsWith('.docx')) {
+                const docFiles = Object.keys(zip.files).filter(f => f === "word/document.xml" || f.startsWith("word/header") || f.startsWith("word/footer"));
+                allFiles = docFiles.length > 0 ? docFiles : Object.keys(zip.files).filter(f => f.startsWith("word/"));
+            }
+            
+            const texts = await Promise.all(allFiles.map(p => zip.files[p].async("text")));
+            const cleanText = texts.join(" ").replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ');
+            
+            // Regex for Hyperlinks and Pakistani/International formatted phones
+            const linkRegex = /(https?:\\/\\/[^\\s"<]+|www\\.[^\\s"<]+)/gi;
+            const phoneRegex = /\\b(?:\\+92|0|92)[\\s-]?\\d{3}[\\s-]?\\d{7}\\b/g;
+
+            const links = [...new Set(cleanText.match(linkRegex) || [])];
+            const phones = [...new Set(cleanText.match(phoneRegex) || [])];
+
+            self.postMessage({ 
+                fileName, 
+                fullText: cleanText.toLowerCase(), 
+                links, 
+                phones, 
+                success: true 
+            });
+        } catch (err) {
+            self.postMessage({ fileName, success: false });
+        }
+    };
+`;
+
+const blob = new Blob([workerCode], { type: 'application/javascript' });
+worker = new Worker(URL.createObjectURL(blob));
+
+async function openDB() {
+    return new Promise(resolve => {
+        const request = indexedDB.open("officeSmartDB", 6); 
+        request.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (db.objectStoreNames.contains("files")) db.deleteObjectStore("files");
+            db.createObjectStore("files", { keyPath: "name" });
+        };
+        request.onsuccess = e => resolve(e.target.result);
+    });
+}
+
+function handleFolderSelect(event) {
+    const files = event.target.files;
+    if (files.length === 0) return;
+
+    selectedFiles = [];
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const lowerName = file.name.toLowerCase();
+        
+        if (lowerName.endsWith(".pptx") || lowerName.endsWith(".docx")) {
+            selectedFiles.push({
+                file: file,
+                relativePath: file.webkitRelativePath || file.name
+            });
+        }
+    }
+
+    const firstPath = files[0].webkitRelativePath;
+    customPath = firstPath ? firstPath.split('/')[0] : "ServerFolder";
+    
+    document.getElementById("status").innerText = `Linked: ${customPath} (${selectedFiles.length} documents found)`;
+    document.getElementById("btnIndex").disabled = false;
+}
+
+async function getStoredFile(db, name) {
+    return new Promise(resolve => {
+        const tx = db.transaction("files", "readonly");
+        const request = tx.objectStore("files").get(name);
+        request.onsuccess = () => resolve(request.result);
+    });
+}
+
+async function startIndexing() {
+    const db = await openDB();
+    const statusEl = document.getElementById("status");
+    const pBar = document.getElementById("progressBar");
+    const pContainer = document.getElementById("progressContainer");
+
+    pContainer.style.display = "block";
+
+    let skipped = 0;
+    let updated = 0;
+
+    for (let i = 0; i < selectedFiles.length; i++) {
+        const { file, relativePath } = selectedFiles[i];
+        const stored = await getStoredFile(db, relativePath);
+
+        if (stored && stored.lastModified === file.lastModified) {
+            skipped++;
+        } else {
+            const arrayBuffer = await file.arrayBuffer();
+
+            worker.postMessage({
+                fileName: relativePath,
+                arrayBuffer
+            }, [arrayBuffer]);
+
+            const result = await new Promise(res =>
+                worker.onmessage = e => res(e.data)
+            );
+
+            if (result.success) {
+                const tx = db.transaction("files", "readwrite");
+                tx.objectStore("files").put({
+                    name: relativePath,
+                    displayPath: customPath + "\\" + relativePath.replaceAll('/', '\\'),
+                    content: result.fullText,
+                    links: result.links,
+                    phones: result.phones,
+                    blob: file,
+                    lastModified: file.lastModified
+                });
+                updated++;
+            }
+        }
+
+        pBar.style.width = (((i + 1) / selectedFiles.length) * 100) + "%";
+        statusEl.innerText = `Syncing... (${i + 1}/${selectedFiles.length})`;
+    }
+
+    statusEl.innerText = `✅ Done! Updated: ${updated}, Unchanged: ${skipped}`;
+
+    setTimeout(() => {
+        pContainer.style.display = "none";
+    }, 3000);
+}
+
+function handleDataAction(value, type, el) {
+    navigator.clipboard.writeText(value);
+    
+    const originalText = el.innerText;
+    el.innerText = "Copied!";
+    el.style.background = "#28a745";
+    el.style.color = "white";
+    
+    setTimeout(() => {
+        el.innerText = originalText;
+        el.style.background = "#e7f3ff";
+        el.style.color = "#0078d4";
+    }, 800);
+
+    if (type === 'link') {
+        const url = value.startsWith('http') ? value : 'https://' + value;
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }
+}
+
+async function getPptxThumbnail(fileBlob) {
+    try {
+        const zip = await JSZip.loadAsync(fileBlob);
+        
+        // 1. Try default PowerPoint embedded thumbnail
+        let thumbnailFile = zip.file("docProps/thumbnail.jpeg") || 
+                            zip.file("docProps/thumbnail.jpg") || 
+                            zip.file("docProps/thumbnail.png");
+        
+        // 2. Fallback: If no docProps thumbnail, grab the first image found in media folder
+        if (!thumbnailFile) {
+            const mediaFiles = Object.keys(zip.files).filter(fileName => 
+                fileName.startsWith("ppt/media/") && /\.(jpg|jpeg|png|gif)$/i.test(fileName)
+            );
+            if (mediaFiles.length > 0) {
+                thumbnailFile = zip.file(mediaFiles[0]);
+            }
+        }
+        
+        if (!thumbnailFile) return null;
+        
+        const imgBlob = await thumbnailFile.async("blob");
+        return URL.createObjectURL(imgBlob);
+    } catch (e) {
+        console.warn("Zip extraction failed:", e);
+        return null;
+    }
+}
+
+async function searchText() {
+    const query = document.getElementById("searchBox").value.toLowerCase().trim();
+    const db = await openDB();
+    const tx = db.transaction("files", "readonly");
+    const request = tx.objectStore("files").getAll();
+    
+    request.onsuccess = () => {
+        const results = request.result.filter(f => 
+            query === "" ? ((f.links && f.links.length > 0) || (f.phones && f.phones.length > 0)) : f.content.includes(query)
+        );
+        
+        const output = document.getElementById("results");
+        output.innerHTML = `<h3>Matches: ${results.length}</h3>`;
+        
+        results.forEach((r, idx) => {
+            const div = document.createElement("div");
+            div.className = "result-item";
+            
+            // Extract clean filename without path
+            const cleanFileName = r.name.split(/[/\\]/).pop();
+
+            let dataHtml = "";
+            if (r.links && r.links.length) {
+                dataHtml += `<div><span class="label">Links:</span>${r.links.map(l => 
+                    `<span class="data-tag" onclick="handleDataAction('${l}', 'link', this)">${l}</span>`
+                ).join('')}</div>`;
+            }
+            if (r.phones && r.phones.length) {
+                dataHtml += `<div style="margin-top:5px"><span class="label">Phones:</span>${r.phones.map(p => 
+                    `<span class="data-tag" onclick="handleDataAction('${p}', 'phone', this)">${p}</span>`
+                ).join('')}</div>`;
+            }
+
+            const isPptx = cleanFileName.toLowerCase().endsWith('.pptx');
+            const icon = cleanFileName.toLowerCase().endsWith('.docx') ? '📝' : (isPptx ? '📊' : '📄');
+            const thumbContainerId = `thumb-container-${idx}`;
+
+            div.innerHTML = `
+                <span class="file-path">${r.displayPath}</span>
+                <a class="file-link">${icon} ${cleanFileName}</a>
+                <button class="load-file-btn" data-id="${r.id}" style="margin-left:8px; cursor:pointer;">Load File</button>
+                ${isPptx ? `<div id="${thumbContainerId}" class="thumb-box" style="margin:6px 0;"></div>` : ''}
+                <div class="extracted-data">${dataHtml}</div>
+            `;
+            
+            // Download file on link click using clean file name
+            div.querySelector('.file-link').onclick = () => {
+                const url = URL.createObjectURL(r.blob);
+                const a = document.createElement("a");
+                a.href = url; 
+                a.download = cleanFileName; 
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            // Assign file to #jsfileInput on button click using clean file name
+            div.querySelector('.load-file-btn').onclick = () => {
+                const fileInput = document.getElementById("upload");
+                if (!fileInput || !r.blob) return;
+
+                // Convert IndexedDB blob directly into a File instance with clean filename
+                const file = new File([r.blob], cleanFileName, { type: r.blob.type || "application/octet-stream" });
+
+                // Use DataTransfer to populate the input's FileList
+                const container = new DataTransfer();
+                container.items.add(file);
+                fileInput.files = container.files;
+
+                // Dispatch change event to notify any change listeners
+                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+            };
+
+            output.appendChild(div);
+
+            // Lazy extraction in background
+            if (isPptx && r.blob) {
+                getPptxThumbnail(r.blob).then(thumbnailUrl => {
+                    const container = document.getElementById(thumbContainerId);
+                    if (!container) return;
+                    
+                    if (thumbnailUrl) {
+                        container.innerHTML = `<img src="${thumbnailUrl}" style="max-width:140px; max-height:100px; border:1px solid #ccc; border-radius:4px; display:block;" />`;
+                    } else {
+                        container.innerHTML = `<span style="font-size:11px; color:#666; background:#f0f0f0; padding:2px 6px; border-radius:3px; border:1px solid #ddd;">No preview available</span>`;
+                    }
+                });
+            }
+        });
+    };
+}
+    async function downloadExtensionZip() {
+    const zip = new JSZip();
+
+    const files = [
+        "content.js",
+        "background.js",
+        "jszip.min.js",
+        "manifest.json",
+        "popup.html",
+        "popup.js"
+    ];
+
+    for (const file of files) {
+        const response = await fetch(
+            `/pptx-web-filler/${file}`
+        );
+
+        if (!response.ok) {
+            throw new Error(`Failed to load ${file}`);
+        }
+
+        const data = await response.arrayBuffer();
+
+        zip.file(file, data);
+    }
+
+    const blob = await zip.generateAsync({
+        type: "blob",
+        compression: "DEFLATE",
+        compressionOptions: {
+            level: 9
+        }
+    });
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "pptx-web-filler.zip";
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+}
+// Run when the PWA loads
+document.addEventListener("DOMContentLoaded", () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const dataParam = urlParams.get("data");
+  const inputIdsParam = urlParams.get("inputIds");
+
+  // --- 1. HANDLE INPUT IDs PAYLOAD ---
+  if (inputIdsParam) {
+    try {
+      const inputIds = JSON.parse(inputIdsParam);
+      populateOutputIds(inputIds);
+    } catch (error) {
+      console.error("Failed to parse inputIds parameter:", error);
+    }
+  }
+
+  if (!dataParam) return;
+
+  // --- 2. CHECK IF PAYLOAD IS AN IMAGE ---
+  const isBase64Image = dataParam.startsWith("data:image/");
+  const isBlobImage = dataParam.startsWith("blob:");
+  const hasImageExtension = dataParam.match(/^https?:\/\/.+\.(png|jpg|jpeg|gif|webp|svg)(\?.*)?$/i);
+
+  if (isBase64Image || isBlobImage || hasImageExtension) {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = dataParam;
+
+    img.onload = () => {
+      images.push({ img: img, dpi: 300 });
+      currentImageIndex = images.length - 1;
+      if (typeof updateImageSelector === "function") updateImageSelector();
+      if (typeof loadCurrentImage === "function") loadCurrentImage();
+    };
+
+    img.onerror = () => {
+      console.warn("Failed to load as image, routing to #output as text.");
+      writeToOutput(dataParam);
+    };
+
+  } else {
+    writeToOutput(dataParam);
+  }
+});
+
+// Helper to construct/inject child divs directly inside #output
+function populateOutputIds(inputIds) {
+  let outputDiv = document.querySelector("#output");
+
+  if (!outputDiv) {
+    outputDiv = document.createElement("div");
+    outputDiv.id = "output";
+    document.body.appendChild(outputDiv);
+  }
+
+  // Preserve initial URL text if present or clear
+  outputDiv.innerHTML = "";
+
+  inputIds.forEach((item) => {
+    const labelId = typeof item === "object" ? (item.label || item.id) : item;
+    const val = typeof item === "object" ? (item.value || item.id) : item;
+
+    const childDiv = document.createElement("div");
+    childDiv.id = labelId;
+    childDiv.textContent = val;
+
+    outputDiv.appendChild(childDiv);
+  });
+}
+
+// Helper function for raw text/URL fallback output
+function writeToOutput(value) {
+  let outputElement = document.querySelector("#output");
+
+  if (!outputElement) {
+    outputElement = document.createElement("div");
+    outputElement.id = "output";
+    document.body.appendChild(outputElement);
+  }
+
+  if (outputElement.tagName === "TEXTAREA" || outputElement.tagName === "INPUT") {
+    outputElement.value = value;
+  } else {
+    // Append URL above the child divs if needed, or set direct content
+    outputElement.insertBefore(document.createTextNode(value), outputElement.firstChild);
+  }
+
+  outputElement.dispatchEvent(new Event("input", { bubbles: true }));
+}
+    let dragCount = 0;
+let lastDragTime = Date.now();
+
+window.addEventListener('dragstart', (e) => {
+  const now = Date.now();
+  
+  // If drags happen less than 300ms apart rapidly
+  if (now - lastDragTime < 300) {
+    dragCount++;
+    if (dragCount > 3) { // If they rapid-fire more than 3 times
+      // Clear the current text selection to force-stop the drag
+      window.getSelection().removeAllRanges();
+      dragCount = 0;
+    }
+  } else {
+    dragCount = 1; // Reset counter
+  }
+  
+  lastDragTime = now;
+}, { passive: true });
+</script>
+</body>
+
+</html>
